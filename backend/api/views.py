@@ -197,6 +197,8 @@ class NegotiationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         negotiation = self.get_object()
+        if negotiation.status == 'rejected':
+            return Response({'error': 'Rejected bids cannot be accepted'}, status=status.HTTP_400_BAD_REQUEST)
         negotiation.status = 'accepted'
         negotiation.save()
         return Response({'status': 'negotiation accepted'})
@@ -211,11 +213,16 @@ class NegotiationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def counter(self, request, pk=None):
         negotiation = self.get_object()
+        if negotiation.status == 'rejected':
+            return Response({'error': 'Rejected bids cannot be countered'}, status=status.HTTP_400_BAD_REQUEST)
         counter_price = request.data.get('counter_price')
+        counter_message = request.data.get('message')
         if not counter_price:
             return Response({'error': 'counter_price is required'}, status=status.HTTP_400_BAD_REQUEST)
         
         negotiation.farmer_counter_price = counter_price
+        if counter_message is not None:
+            negotiation.message = counter_message
         negotiation.status = 'countered'
         negotiation.save()
         return Response({'status': 'counter offer sent'})
