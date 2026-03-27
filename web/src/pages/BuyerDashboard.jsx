@@ -26,6 +26,7 @@ const BuyerDashboard = () => {
   const [logisticsFee, setLogisticsFee] = useState(0);
   const [distanceKm, setDistanceKm] = useState(0);
   const [negotiations, setNegotiations] = useState([]);
+  const [toast, setToast] = useState({ show: false, message: '' });
   const [profileForm, setProfileForm] = useState({
     email: '',
     business_name: '',
@@ -37,6 +38,13 @@ const BuyerDashboard = () => {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
   const navigate = useNavigate();
+
+  const showToast = (message) => {
+    setToast({ show: true, message });
+    setTimeout(() => {
+      setToast({ show: false, message: '' });
+    }, 2200);
+  };
 
   const normalizeCategory = (value) => {
     const raw = (value || '').toString().trim().toLowerCase();
@@ -127,10 +135,45 @@ const BuyerDashboard = () => {
 
   const addToCart = (product, priceOverride = null) => {
     const finalPrice = priceOverride ? parseFloat(priceOverride) : product.price;
-    if (!cart.find(p => p.id === product.id)) {
+    const existing = cart.find((p) => p.id === product.id);
+
+    if (!existing) {
       setCart([...cart, { ...product, price: finalPrice, quantity: 1 }]);
+      showToast(`${product.name} added to cart`);
+      return;
     }
+
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item.id === product.id
+          ? { ...item, quantity: (Number(item.quantity) || 1) + 1 }
+          : item
+      )
+    );
+    showToast(`${product.name} quantity updated in cart`);
   };
+
+  const updateCartQuantity = (productId, nextQuantity) => {
+    const safeQty = Math.max(1, Number(nextQuantity) || 1);
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item.id === productId ? { ...item, quantity: safeQty } : item
+      )
+    );
+  };
+
+  const changeCartQuantity = (productId, delta) => {
+    setCart((prevCart) =>
+      prevCart.map((item) => {
+        if (item.id !== productId) return item;
+        const nextQty = Math.max(1, (Number(item.quantity) || 1) + delta);
+        return { ...item, quantity: nextQty };
+      })
+    );
+  };
+
+  const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * (Number(item.quantity) || 0)), 0);
+  const cartTotal = cartSubtotal + Number(logisticsFee || 0);
 
   const handleNegotiate = async (e) => {
     e.preventDefault();
@@ -152,8 +195,7 @@ const BuyerDashboard = () => {
   const handleCheckout = async () => {
     setCheckingOut(true);
     try {
-      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-      const totalAmount = subtotal + logisticsFee;
+      const totalAmount = cartTotal;
       
       const orderRes = await api.post('orders/', {
         items: cart.map(item => ({ product_id: item.id, quantity: item.quantity, price: item.price })),
@@ -374,14 +416,6 @@ const BuyerDashboard = () => {
             </div>
           </div>
 
-          <div className="p-8 bg-gradient-to-br from-primary-600 to-primary-700 rounded-[2.5rem] shadow-2xl shadow-primary-200 text-white space-y-6">
-            <div className="w-12 h-12 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
-              <TrendingDown size={28} />
-            </div>
-            <h4 className="text-2xl font-black leading-tight">Smart Negotiation</h4>
-            <p className="text-sm font-medium text-primary-100">Our platform allows you to directly counter-offer prices with farmers for bulk orders.</p>
-            <button className="w-full py-3 bg-white text-primary-700 font-black rounded-xl hover:bg-primary-50 transition-all">Learn How</button>
-          </div>
         </aside>
 
         {/* Product Grid / Cart / Orders */}
@@ -452,36 +486,61 @@ const BuyerDashboard = () => {
           )}
 
           {activeTab === 'cart' && (
-            <div className="max-w-4xl mx-auto space-y-10 animate-in slide-in-from-left-4 duration-700">
-              <h2 className="text-4xl font-extrabold text-slate-900">Checkout Basket</h2>
+            <div className="max-w-5xl mx-auto space-y-8 animate-in slide-in-from-left-4 duration-700">
+              <div className="flex items-end justify-between">
+                <h2 className="text-4xl font-extrabold text-slate-900">Checkout Basket</h2>
+                <button
+                  onClick={() => setActiveTab('browse')}
+                  className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors"
+                >
+                  Continue Shopping
+                </button>
+              </div>
               {cart.length > 0 ? (
-                <div className="grid md:grid-cols-3 gap-12">
+                <div className="grid md:grid-cols-3 gap-8">
                   <div className="md:col-span-2 space-y-6">
                     {cart.map((item) => (
-                      <div key={item.id} className="bg-white p-8 rounded-[2rem] border border-slate-100 flex items-center justify-between">
+                      <div key={item.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between">
                         <div className="flex items-center gap-6">
                           <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden">
-                            <img src={item.image} className="w-full h-full object-cover" />
+                            <img
+                              src={item.image || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&q=80&w=600'}
+                              alt={item.name}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                           <div>
                             <h4 className="text-xl font-black text-slate-900">{item.name}</h4>
                             <p className="text-slate-500 font-bold">₹{item.price}/{item.unit}</p>
+                            <p className="text-xs text-slate-400 font-bold mt-1">Line Total: ₹{(item.price * (Number(item.quantity) || 0)).toFixed(2)}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-4">
-                          <input 
-                            type="number" 
-                            className="w-16 p-2 bg-slate-50 border-none rounded-xl text-center font-bold" 
-                            value={item.quantity}
-                            onChange={(e) => {
-                              const newCart = [...cart];
-                              newCart.find(p => p.id === item.id).quantity = e.target.value;
-                              setCart(newCart);
-                            }}
-                          />
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center rounded-xl border border-slate-200 bg-slate-50">
+                            <button
+                              onClick={() => changeCartQuantity(item.id, -1)}
+                              className="px-3 py-2 text-slate-600 font-black hover:bg-slate-100 rounded-l-xl"
+                            >
+                              -
+                            </button>
+                            <input 
+                              type="number" 
+                              className="w-14 py-2 bg-transparent border-none text-center font-bold outline-none" 
+                              value={item.quantity}
+                              min={1}
+                              onChange={(e) => updateCartQuantity(item.id, e.target.value)}
+                            />
+                            <button
+                              onClick={() => changeCartQuantity(item.id, 1)}
+                              className="px-3 py-2 text-slate-600 font-black hover:bg-slate-100 rounded-r-xl"
+                            >
+                              +
+                            </button>
+                          </div>
                           <button 
                             className="p-2 text-slate-300 hover:text-red-500 transition-colors"
                             onClick={() => setCart(cart.filter(p => p.id !== item.id))}
+                            title="Remove item"
                           >
                             <Trash2 size={24} />
                           </button>
@@ -490,10 +549,10 @@ const BuyerDashboard = () => {
                     ))}
                   </div>
                   <div className="space-y-8">
-                    <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+                    <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6 md:sticky md:top-8">
                       <h3 className="text-2xl font-black text-slate-900">Summary</h3>
                       <div className="space-y-4 font-bold text-slate-500">
-                        <div className="flex justify-between"><span>Subtotal</span><span className="text-slate-900">₹{cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)}</span></div>
+                        <div className="flex justify-between"><span>Subtotal</span><span className="text-slate-900">₹{cartSubtotal.toFixed(2)}</span></div>
                         <div className="flex justify-between items-center text-xs">
                           <div className="flex items-center gap-1">
                             <span>Logistics Fee</span>
@@ -509,8 +568,11 @@ const BuyerDashboard = () => {
                       </div>
                       <div className="pt-6 border-t border-slate-100 flex justify-between items-center text-3xl font-black text-slate-900">
                         <span>Total</span>
-                        <span>₹{cart.reduce((sum, item) => sum + (item.price * item.quantity), 0) + logisticsFee}</span>
+                        <span>₹{cartTotal.toFixed(2)}</span>
                       </div>
+                      <p className="text-xs text-slate-500 font-semibold bg-slate-50 rounded-xl px-3 py-2">
+                        Secure payment gateway powered by Razorpay. Your order is confirmed after payment verification.
+                      </p>
                       <button 
                         onClick={handleCheckout}
                         disabled={checkingOut}
@@ -841,6 +903,40 @@ const BuyerDashboard = () => {
               </div>
               <button type="submit" className="w-full py-5 bg-primary-600 text-white text-xl font-black rounded-3xl hover:bg-primary-700 transition-all shadow-xl shadow-primary-200">Send Price Offer</button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {toast.show && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-slate-900/35 backdrop-blur-[2px]">
+          <div className="bg-white text-slate-900 rounded-[1.75rem] shadow-2xl p-6 w-full max-w-md border border-slate-200 animate-in zoom-in-95 duration-300">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-lg font-black text-slate-900">Added To Cart</p>
+                <p className="text-sm font-semibold text-slate-600 mt-1">{toast.message}</p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                onClick={() => {
+                  setActiveTab('cart');
+                  setToast({ show: false, message: '' });
+                }}
+                className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-black hover:bg-primary-700 transition-colors"
+              >
+                View Cart
+              </button>
+              <button
+                onClick={() => setToast({ show: false, message: '' })}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-black hover:bg-slate-200 transition-colors"
+              >
+                Dismiss
+              </button>
+            </div>
           </div>
         </div>
       )}
