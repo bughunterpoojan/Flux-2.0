@@ -83,6 +83,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
   const [timePeriod, setTimePeriod] = useState('6m');
   const [startDate, setStartDate] = useState('2026-01-01');
   const [endDate, setEndDate] = useState('2026-06-30');
+  const [profitView, setProfitView] = useState('performance');
 
   const adjustedTableData = useMemo(() => {
     const region = regionAdjustments[selectedRegion] || regionAdjustments.Maharashtra;
@@ -196,8 +197,8 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
   ];
 
   return (
-    <div className="max-w-[1440px] mx-auto space-y-6 pb-6">
-      <header className="bg-gradient-to-br from-white to-emerald-50/30 rounded-3xl border border-emerald-100/80 shadow-sm p-5 lg:p-7">
+    <div className="max-w-[1440px] mx-auto space-y-5 pb-6">
+      <header className="bg-gradient-to-br from-white to-emerald-50/20 rounded-3xl border border-slate-200 shadow-sm p-5 lg:p-7">
         <div className="space-y-4">
           <div>
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">AgriVision Dashboard</h1>
@@ -207,7 +208,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <div className="flex items-center gap-3 bg-emerald-50 rounded-2xl px-4 py-3 border border-emerald-100 min-h-[64px]">
+            <div className="flex items-center gap-3 bg-emerald-50/70 rounded-2xl px-4 py-3 border border-emerald-100 min-h-[64px]">
               <UserCircle2 className="w-6 h-6 text-emerald-700" />
               <div className="leading-tight">
                 <p className="text-[11px] uppercase tracking-wide text-emerald-700/70 font-bold">Farmer</p>
@@ -217,7 +218,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-50 rounded-2xl px-3 py-3 border border-slate-200 min-h-[64px] min-w-0">
+            <div className="flex items-center gap-2 bg-white rounded-2xl px-3 py-3 border border-slate-200 min-h-[64px] min-w-0">
               <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
               <select
                 value={selectedState}
@@ -243,7 +244,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
               </select>
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-50 rounded-2xl px-3 py-3 border border-slate-200 min-h-[64px] min-w-0">
+            <div className="flex items-center gap-2 bg-white rounded-2xl px-3 py-3 border border-slate-200 min-h-[64px] min-w-0">
               <CalendarDays className="w-4 h-4 text-emerald-600 shrink-0" />
               <input
                 type="date"
@@ -263,16 +264,18 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-        <aside className="xl:col-span-3 bg-white rounded-3xl border border-emerald-100/80 shadow-sm p-5 lg:p-6 space-y-6 h-fit xl:sticky xl:top-6">
-          <div className="flex items-center gap-2 text-slate-900">
-            <Filter className="w-5 h-5 text-emerald-600" />
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+        <aside className="xl:col-span-3 bg-white rounded-3xl border border-slate-200 shadow-sm p-5 lg:p-6 space-y-6 h-fit xl:sticky xl:top-6">
+          <div className="flex items-center gap-3 text-slate-900">
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
+              <Filter className="w-5 h-5 text-emerald-600" />
+            </div>
             <h2 className="text-xl font-extrabold">Filters Panel</h2>
           </div>
 
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">Crop Selection</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">Crop Selection</label>
               <select
                 value={selectedCrop}
                 onChange={(e) => setSelectedCrop(e.target.value)}
@@ -286,7 +289,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">Region Selection</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">Region Selection</label>
               <select
                 value={selectedRegion}
                 onChange={(e) => setSelectedRegion(e.target.value)}
@@ -299,16 +302,16 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
             </div>
 
             <div>
-              <label className="block text-xs font-bold uppercase tracking-wide text-slate-400 mb-2">Time Period</label>
-              <div className="grid grid-cols-2 gap-2.5">
+              <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">Time Period</label>
+              <div className="grid grid-cols-2 gap-2">
                 {Object.entries(periodLabelMap).map(([value, label]) => (
                   <button
                     key={value}
                     onClick={() => setTimePeriod(value)}
-                    className={`rounded-xl px-3 py-2.5 text-xs font-bold transition-all ${
+                    className={`rounded-xl px-3 py-2.5 text-xs font-bold transition-all border ${
                       timePeriod === value
-                        ? 'bg-emerald-600 text-white shadow-md'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        ? 'bg-emerald-600 border-emerald-600 text-white shadow-sm'
+                        : 'bg-slate-100 border-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
                     {label}
@@ -334,24 +337,51 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
           </div>
         </aside>
 
-        <section className="xl:col-span-9 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
-            <div className="bg-white rounded-3xl border border-emerald-100/80 shadow-sm p-5 min-h-[150px]">
+        <section className="xl:col-span-9 space-y-5">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-1.5 inline-flex">
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setProfitView('performance')}
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                  profitView === 'performance'
+                    ? 'bg-emerald-600 text-white shadow-sm'
+                    : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Performance View
+              </button>
+              <button
+                onClick={() => setProfitView('insights')}
+                className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                  profitView === 'insights'
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-transparent text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                Insights & Table
+              </button>
+            </div>
+          </div>
+
+          {profitView === 'performance' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
               <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Total Profit</p>
               <p className="text-3xl font-extrabold text-emerald-700 mt-2">{formatCurrency(metrics.totalProfit)}</p>
               <p className="text-xs text-slate-500 mt-1 font-medium">Net result for selected filters</p>
             </div>
-            <div className="bg-white rounded-3xl border border-emerald-100/80 shadow-sm p-5 min-h-[150px]">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
               <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Total Cost</p>
               <p className="text-3xl font-extrabold text-amber-700 mt-2">{formatCurrency(metrics.totalCost)}</p>
               <p className="text-xs text-slate-500 mt-1 font-medium">Seeds, fertilizer, transport, labor</p>
             </div>
-            <div className="bg-white rounded-3xl border border-emerald-100/80 shadow-sm p-5 min-h-[150px]">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
               <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Revenue</p>
               <p className="text-3xl font-extrabold text-slate-900 mt-2">{formatCurrency(metrics.revenue)}</p>
               <p className="text-xs text-slate-500 mt-1 font-medium">Total selling value</p>
             </div>
-            <div className="bg-white rounded-3xl border border-emerald-100/80 shadow-sm p-5 min-h-[150px]">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
               <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Best Performing Crop</p>
               <p className="text-3xl font-extrabold text-emerald-700 mt-2">{metrics.bestCrop}</p>
               <p className="text-xs text-slate-500 mt-1 font-medium">Top crop by current profit</p>
@@ -359,7 +389,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
           </div>
 
           <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
-            <div className="bg-white rounded-3xl border border-emerald-100/80 shadow-sm p-5">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
               <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Crop vs Profit</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
@@ -374,7 +404,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-emerald-100/80 shadow-sm p-5">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
               <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Price Trends (Last 6 Months)</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
@@ -396,9 +426,13 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
               </div>
             </div>
           </div>
+            </>
+          )}
 
-          <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
-            <div className="bg-white rounded-3xl border border-emerald-100/80 shadow-sm p-5">
+          {profitView === 'insights' && (
+            <>
+              <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
               <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Cost Distribution</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
@@ -431,7 +465,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-emerald-100/80 shadow-sm p-5 2xl:col-span-2">
+            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 2xl:col-span-2">
               <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Insights Panel</h3>
               <div className="space-y-3">
                 {insights.map((text) => (
@@ -446,7 +480,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
             </div>
           </div>
 
-          <div className="bg-white rounded-3xl border border-emerald-100/80 shadow-sm p-5">
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
             <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Crop Profitability Table</h3>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px]">
@@ -482,6 +516,8 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
               </table>
             </div>
           </div>
+            </>
+          )}
 
           <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-lime-600 text-white px-5 py-4 shadow-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">

@@ -26,6 +26,7 @@ const FarmerDashboard = () => {
   const [counterMessage, setCounterMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [trackingOrder, setTrackingOrder] = useState(null);
   const [profileForm, setProfileForm] = useState({
     email: '',
     business_name: '',
@@ -249,6 +250,20 @@ const FarmerDashboard = () => {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const orderStages = ['pending', 'accepted', 'shipped', 'delivered'];
+
+  const getStageIndex = (status) => {
+    const idx = orderStages.indexOf(status);
+    return idx === -1 ? 0 : idx;
+  };
+
+  const stageLabel = (stage) => {
+    if (stage === 'pending') return 'Order Placed';
+    if (stage === 'accepted') return 'Farmer Accepted';
+    if (stage === 'shipped') return 'Shipped';
+    return 'Delivered';
   };
 
   const handleNegotiationAction = async (id, action, counterValue = null, messageValue = '') => {
@@ -506,7 +521,7 @@ const FarmerDashboard = () => {
                   <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Buyer</th>
                   <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Amount</th>
                   <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Status</th>
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Action</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -537,14 +552,23 @@ const FarmerDashboard = () => {
                       </span>
                     </td>
                     <td className="px-8 py-6">
-                      <button 
-                        onClick={() => handleUpdateOrderStatus(order)}
-                        className="text-primary-600 font-black hover:underline"
-                      >
-                        {order.status === 'pending' ? 'Accept Order' : 
-                         order.status === 'accepted' ? 'Mark as Shipped' :
-                         order.status === 'shipped' ? 'Mark as Delivered' : 'Completed'}
-                      </button>
+                      <div className="flex items-center gap-5">
+                        <button 
+                          onClick={() => handleUpdateOrderStatus(order)}
+                          className="text-primary-600 font-black hover:underline disabled:text-slate-400 disabled:no-underline"
+                          disabled={order.status === 'delivered' || order.status === 'cancelled'}
+                        >
+                          {order.status === 'pending' ? 'Accept Order' : 
+                           order.status === 'accepted' ? 'Mark as Shipped' :
+                           order.status === 'shipped' ? 'Mark as Delivered' : 'Completed'}
+                        </button>
+                        <button
+                          onClick={() => setTrackingOrder(order)}
+                          className="text-slate-700 font-black hover:text-primary-600 hover:underline"
+                        >
+                          View Details
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -983,6 +1007,98 @@ const FarmerDashboard = () => {
                 >
                   Send Counter
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {trackingOrder && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-4xl rounded-[2.2rem] p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-3xl font-black text-slate-900">Order Details & Tracking</h3>
+                <p className="text-slate-500 font-medium mt-1">Order #{trackingOrder.id.toString().padStart(4, '0')}</p>
+              </div>
+              <button
+                onClick={() => setTrackingOrder(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4 mb-8">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-400 font-black">Buyer</p>
+                <p className="text-lg font-black text-slate-900 mt-1">{trackingOrder.buyer_name}</p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-400 font-black">Order Value</p>
+                <p className="text-lg font-black text-slate-900 mt-1">₹{trackingOrder.total_amount}</p>
+                <p className="text-xs text-slate-500 font-bold">Incl. ₹{trackingOrder.delivery_fee} logistics</p>
+              </div>
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-400 font-black">Placed On</p>
+                <p className="text-lg font-black text-slate-900 mt-1">{new Date(trackingOrder.created_at).toLocaleString()}</p>
+              </div>
+            </div>
+
+            <div className="mb-8">
+              <h4 className="text-xl font-black text-slate-900 mb-4">Order Tracking</h4>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                {orderStages.map((stage, idx) => {
+                  const activeIndex = getStageIndex(trackingOrder.status);
+                  const isCompleted = idx <= activeIndex;
+                  const isCurrent = idx === activeIndex;
+
+                  return (
+                    <div
+                      key={stage}
+                      className={`rounded-2xl border p-4 ${
+                        isCompleted
+                          ? 'bg-emerald-50 border-emerald-200'
+                          : 'bg-slate-50 border-slate-200'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        {isCompleted ? (
+                          <CheckCircle className="w-5 h-5 text-emerald-600" />
+                        ) : (
+                          <Clock className="w-5 h-5 text-slate-400" />
+                        )}
+                        <span className={`text-xs font-black uppercase ${isCurrent ? 'text-emerald-700' : 'text-slate-500'}`}>
+                          {isCurrent ? 'Current Stage' : 'Stage'}
+                        </span>
+                      </div>
+                      <p className={`font-black ${isCompleted ? 'text-emerald-700' : 'text-slate-500'}`}>
+                        {stageLabel(stage)}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xl font-black text-slate-900 mb-4">Items</h4>
+              <div className="space-y-3">
+                {(trackingOrder.items || []).length > 0 ? (
+                  trackingOrder.items.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4">
+                      <div>
+                        <p className="font-black text-slate-900">{item.product_name || `Product #${item.product}`}</p>
+                        <p className="text-sm text-slate-500 font-bold">Quantity: {item.quantity}</p>
+                      </div>
+                      <p className="font-black text-slate-900">₹{item.price_at_order}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-500 font-medium">
+                    Items detail is not available for this order.
+                  </div>
+                )}
               </div>
             </div>
           </div>
