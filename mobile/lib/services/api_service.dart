@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://10.0.2.2:8000/api/'; // For Android Emulator
+  static const String baseUrl = 'http://10.212.5.93:8000/api/'; // For Android Emulator and External Devices
 
   Future<Map<String, dynamic>> login(String username, String password) async {
     final response = await http.post(
