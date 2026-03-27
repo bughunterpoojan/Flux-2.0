@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Package, ShoppingCart, TrendingUp, LogOut, 
   Trash2, Edit, ChevronRight, LayoutDashboard, History,
-  Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle, User
+  Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle, User, BarChart3
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import FarmerProfitDecisionDashboard from './FarmerProfitDecisionDashboard';
 
 const FarmerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -22,6 +23,7 @@ const FarmerDashboard = () => {
   const [negotiations, setNegotiations] = useState([]);
   const [showCounterModal, setShowCounterModal] = useState(null);
   const [counterPrice, setCounterPrice] = useState('');
+  const [counterMessage, setCounterMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [profileForm, setProfileForm] = useState({
@@ -249,12 +251,20 @@ const FarmerDashboard = () => {
     }
   };
 
-  const handleNegotiationAction = async (id, action, counterValue = null) => {
+  const handleNegotiationAction = async (id, action, counterValue = null, messageValue = '') => {
+    if (typeof id === 'string' && id.startsWith('demo-bid-')) {
+      alert('This is a demo bid for UI preview. Real actions will work when buyer bids are available.');
+      return;
+    }
+
     try {
-      const payload = action === 'counter' ? { counter_price: counterValue } : {};
+      const payload = action === 'counter'
+        ? { counter_price: counterValue, message: messageValue || '' }
+        : {};
       await api.post(`negotiations/${id}/${action}/`, payload);
       setShowCounterModal(null);
       setCounterPrice('');
+      setCounterMessage('');
       fetchData();
     } catch (err) {
       console.error(err);
@@ -270,6 +280,21 @@ const FarmerDashboard = () => {
     { name: 'Sat', revenue: 2390 },
     { name: 'Sun', revenue: 3490 },
   ];
+
+  const demoBid = {
+    id: 'demo-bid-1',
+    product_name: 'Premium Nashik Onions',
+    product_image: 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&q=80&w=600',
+    buyer_name: 'Demo Buyer',
+    offered_price: '39.00',
+    original_price: '52.00',
+    unit: 'kg',
+    message: 'Need 2 tons weekly, can you offer a better wholesale rate?',
+    status: 'pending',
+    farmer_counter_price: null,
+  };
+
+  const displayedNegotiations = negotiations.length > 0 ? negotiations : [demoBid];
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
@@ -288,6 +313,12 @@ const FarmerDashboard = () => {
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'overview' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
             <LayoutDashboard size={22} /> Overview
+          </button>
+          <button
+            onClick={() => setActiveTab('profit')}
+            className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'profit' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            <BarChart3 size={22} /> Profit Dashboard
           </button>
           <button 
             onClick={() => setActiveTab('products')}
@@ -331,22 +362,28 @@ const FarmerDashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 ml-72 p-12 overflow-y-auto">
-        <header className="flex justify-between items-center mb-10">
-          <div>
-            <h1 className="text-4xl font-extrabold text-slate-900 mb-2">
-              Welcome back, <span className="text-primary-600">
-                {userProfile ? (userProfile.business_name || userProfile.username) : 'Farmer...'}
-              </span>
-            </h1>
-            <p className="text-slate-500 font-medium">Here's what's happening on your farm today.</p>
-          </div>
-          <button 
-            onClick={openAddModal}
-            className="flex items-center gap-2 px-8 py-4 bg-primary-600 text-white font-bold rounded-2xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all hover:scale-[1.02]"
-          >
-            <Plus size={22} /> Add New Crop
-          </button>
-        </header>
+        {activeTab !== 'profit' && (
+          <header className="flex justify-between items-center mb-10">
+            <div>
+              <h1 className="text-4xl font-extrabold text-slate-900 mb-2">
+                Welcome back, <span className="text-primary-600">
+                  {userProfile ? (userProfile.business_name || userProfile.username) : 'Farmer...'}
+                </span>
+              </h1>
+              <p className="text-slate-500 font-medium">Here's what's happening on your farm today.</p>
+            </div>
+            <button 
+              onClick={openAddModal}
+              className="flex items-center gap-2 px-8 py-4 bg-primary-600 text-white font-bold rounded-2xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all hover:scale-[1.02]"
+            >
+              <Plus size={22} /> Add New Crop
+            </button>
+          </header>
+        )}
+
+        {activeTab === 'profit' && (
+          <FarmerProfitDecisionDashboard userProfile={userProfile} />
+        )}
 
         {activeTab === 'overview' && (
           <div className="space-y-12 animate-in fade-in duration-700">
@@ -513,6 +550,103 @@ const FarmerDashboard = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {activeTab === 'bids' && (
+          <div className="space-y-6 animate-in fade-in duration-700">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-extrabold text-slate-900">Active Bids</h2>
+                <p className="text-slate-500 font-medium">Review buyer offers and accept, reject, or send counter offers.</p>
+              </div>
+              {negotiations.length === 0 && (
+                <span className="px-4 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-100 text-xs font-bold uppercase tracking-wide">
+                  Showing Demo Bid
+                </span>
+              )}
+            </div>
+
+            <div className="grid gap-6">
+              {displayedNegotiations.map((bid) => (
+                <div key={bid.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 md:p-8">
+                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                    <div className="flex items-center gap-5">
+                      <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
+                        <img
+                          src={bid.product_image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600'}
+                          alt={bid.product_name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-xl font-black text-slate-900">{bid.product_name || 'Product'}</h3>
+                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
+                            bid.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                            bid.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                            bid.status === 'countered' ? 'bg-blue-100 text-blue-700' :
+                            'bg-orange-100 text-orange-700'
+                          }`}>
+                            {bid.status}
+                          </span>
+                        </div>
+
+                        <p className="text-sm text-slate-500 font-bold">Buyer: {bid.buyer_name || 'Buyer'}</p>
+
+                        <div className="flex flex-wrap gap-4 text-sm font-bold">
+                          <span className="text-slate-400 line-through">Original: ₹{bid.original_price}/{bid.unit || 'kg'}</span>
+                          <span className="text-primary-700">Offered: ₹{bid.offered_price}/{bid.unit || 'kg'}</span>
+                          {bid.farmer_counter_price && (
+                            <span className="text-blue-700">Counter: ₹{bid.farmer_counter_price}/{bid.unit || 'kg'}</span>
+                          )}
+                        </div>
+
+                        {bid.message && (
+                          <p className="text-sm text-slate-600 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                            {bid.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 lg:justify-end">
+                      {bid.status !== 'rejected' ? (
+                        <>
+                          <button
+                            onClick={() => handleNegotiationAction(bid.id, 'accept')}
+                            className="px-5 py-2.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition-colors"
+                          >
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => {
+                              setShowCounterModal(bid);
+                              setCounterPrice(bid.offered_price || '');
+                              setCounterMessage('');
+                            }}
+                            className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+                          >
+                            Counter
+                          </button>
+                          <button
+                            onClick={() => handleNegotiationAction(bid.id, 'reject')}
+                            className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors"
+                          >
+                            Reject
+                          </button>
+                        </>
+                      ) : (
+                        <span className="px-4 py-2 rounded-xl bg-red-50 text-red-700 border border-red-100 text-xs font-black uppercase tracking-wide">
+                          Rejected permanently
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -799,6 +933,58 @@ const FarmerDashboard = () => {
                 {editingProduct ? 'Save Changes' : 'Launch Listing'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showCounterModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-md rounded-[2.2rem] p-8 shadow-2xl">
+            <h3 className="text-2xl font-black text-slate-900 mb-2">Send Counter Offer</h3>
+            <p className="text-sm text-slate-500 font-medium mb-6">
+              Product: {showCounterModal.product_name || 'Product'}
+            </p>
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase text-slate-400">Counter Price (₹/{showCounterModal.unit || 'kg'})</label>
+                <input
+                  type="number"
+                  value={counterPrice}
+                  onChange={(e) => setCounterPrice(e.target.value)}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary-500 font-bold"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase text-slate-400">Message (Optional)</label>
+                <textarea
+                  value={counterMessage}
+                  onChange={(e) => setCounterMessage(e.target.value)}
+                  placeholder="Add a note for buyer (delivery terms, quantity, etc.)"
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-primary-500 font-bold min-h-[96px]"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setShowCounterModal(null);
+                    setCounterPrice('');
+                    setCounterMessage('');
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleNegotiationAction(showCounterModal.id, 'counter', counterPrice, counterMessage)}
+                  className="px-4 py-2.5 rounded-xl bg-primary-600 text-white font-bold hover:bg-primary-700"
+                >
+                  Send Counter
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

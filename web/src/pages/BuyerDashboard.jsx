@@ -203,6 +203,36 @@ const BuyerDashboard = () => {
     }
   };
 
+  const demoBuyerBid = {
+    id: 'demo-buyer-bid-1',
+    product: null,
+    product_name: 'Premium Nashik Onions',
+    product_image: 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&q=80&w=600',
+    status: 'countered',
+    original_price: '52.00',
+    offered_price: '39.00',
+    farmer_counter_price: '44.00',
+    unit: 'kg',
+  };
+
+  const displayedNegotiations = negotiations.length > 0 ? negotiations : [demoBuyerBid];
+
+  const handleBidPurchase = (neg) => {
+    if (typeof neg.id === 'string' && neg.id.startsWith('demo-buyer-bid-')) {
+      alert('This is a demo bid preview. Real bids will be purchasable once a live farmer response is available.');
+      return;
+    }
+
+    const product = products.find((p) => p.id === neg.product);
+    if (!product) {
+      alert('Product is not available right now. Please refresh and try again.');
+      return;
+    }
+
+    addToCart(product, neg.status === 'accepted' ? neg.offered_price : neg.farmer_counter_price);
+    setActiveTab('cart');
+  };
+
   const handleProfileSave = async (e) => {
     e.preventDefault();
     setProfileSaving(true);
@@ -542,9 +572,13 @@ const BuyerDashboard = () => {
           {activeTab === 'bids' && (
             <div className="max-w-4xl mx-auto space-y-10 animate-in slide-in-from-right-4 duration-700">
               <h2 className="text-4xl font-extrabold text-slate-900">Your Negotiations</h2>
+              {negotiations.length === 0 && (
+                <div className="px-4 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-100 text-xs font-bold uppercase tracking-wide w-fit">
+                  Showing Demo Bid Preview
+                </div>
+              )}
               <div className="grid gap-6">
-                {negotiations.length > 0 ? (
-                  negotiations.map((neg) => (
+                {displayedNegotiations.map((neg) => (
                     <div key={neg.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between">
                       <div className="flex items-center gap-6">
                         <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden">
@@ -573,11 +607,7 @@ const BuyerDashboard = () => {
                       <div className="flex items-center gap-4">
                         {(neg.status === 'accepted' || neg.status === 'countered') && (
                           <button 
-                            onClick={() => {
-                              const product = products.find(p => p.id === neg.product);
-                              addToCart(product, neg.status === 'accepted' ? neg.offered_price : neg.farmer_counter_price);
-                              setActiveTab('cart');
-                            }}
+                            onClick={() => handleBidPurchase(neg)}
                             className="px-6 py-3 bg-primary-600 text-white font-bold rounded-2xl hover:bg-primary-700 transition-all flex items-center gap-2"
                           >
                             <ShoppingCart size={18} /> Purchase Now
@@ -588,16 +618,7 @@ const BuyerDashboard = () => {
                         )}
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="bg-white py-32 rounded-[2.5rem] text-center space-y-6">
-                    <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
-                      <TrendingDown size={48} />
-                    </div>
-                    <h3 className="text-2xl font-bold text-slate-900">No negotiations yet</h3>
-                    <button onClick={() => setActiveTab('browse')} className="px-10 py-4 bg-primary-600 text-white font-bold rounded-2xl hover:scale-105 transition-transform">Browse Fresh Produce</button>
-                  </div>
-                )}
+                  ))}
               </div>
             </div>
           )}
