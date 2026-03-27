@@ -26,7 +26,30 @@ const BuyerDashboard = () => {
   const [logisticsFee, setLogisticsFee] = useState(0);
   const [distanceKm, setDistanceKm] = useState(0);
   const [negotiations, setNegotiations] = useState([]);
+  const [profileForm, setProfileForm] = useState({
+    email: '',
+    business_name: '',
+    gstin: '',
+    address: '',
+    location_lat: '',
+    location_lng: ''
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMessage, setProfileMessage] = useState('');
   const navigate = useNavigate();
+
+  const normalizeCategory = (value) => {
+    const raw = (value || '').toString().trim().toLowerCase();
+    if (raw === 'vegetable') return 'vegetables';
+    if (raw === 'fruit') return 'fruits';
+    return raw;
+  };
+
+  const formatCategoryLabel = (value) => {
+    const normalized = normalizeCategory(value);
+    if (!normalized) return 'Unknown';
+    return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+  };
 
   useEffect(() => {
     if (cart.length > 0) {
@@ -40,6 +63,18 @@ const BuyerDashboard = () => {
   useEffect(() => {
     fetchData();
   }, [activeTab]);
+
+  useEffect(() => {
+    if (!userProfile) return;
+    setProfileForm({
+      email: userProfile.email || '',
+      business_name: userProfile.business_name || '',
+      gstin: userProfile.gstin || '',
+      address: userProfile.address || '',
+      location_lat: userProfile.location_lat ?? '',
+      location_lng: userProfile.location_lng ?? ''
+    });
+  }, [userProfile]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -168,10 +203,39 @@ const BuyerDashboard = () => {
     }
   };
 
-  const filteredProducts = products.filter(p => 
-    p.name.toLowerCase().includes(search.toLowerCase()) && 
-    (filter === 'all' || p.category === filter)
-  );
+  const handleProfileSave = async (e) => {
+    e.preventDefault();
+    setProfileSaving(true);
+    setProfileMessage('');
+
+    try {
+      const payload = {
+        email: profileForm.email,
+        business_name: profileForm.business_name,
+        gstin: profileForm.gstin,
+        address: profileForm.address,
+        location_lat: profileForm.location_lat === '' ? null : Number(profileForm.location_lat),
+        location_lng: profileForm.location_lng === '' ? null : Number(profileForm.location_lng)
+      };
+
+      const response = await api.patch('auth/profile/', payload);
+      setUserProfile(response.data);
+      setProfileMessage('Profile updated successfully.');
+    } catch (err) {
+      setProfileMessage('Unable to update profile. Please try again.');
+      console.error(err);
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  const filteredProducts = products.filter((p) => {
+    const normalizedProductCategory = normalizeCategory(p.category);
+    return (
+      p.name.toLowerCase().includes(search.toLowerCase()) &&
+      (filter === 'all' || normalizedProductCategory === filter)
+    );
+  });
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -198,6 +262,13 @@ const BuyerDashboard = () => {
         </div>
 
         <div className="flex items-center gap-6">
+          <button
+            onClick={() => setActiveTab('profile')}
+            className={`p-3 rounded-2xl transition-all ${activeTab === 'profile' ? 'bg-primary-50 text-primary-600 font-bold px-5 flex items-center gap-2 ring-1 ring-primary-100' : 'text-slate-500 hover:bg-slate-50'}`}
+          >
+            {activeTab === 'profile' ? <><User size={20}/> My Profile</> : <User size={24}/>}
+          </button>
+
           <button 
             onClick={() => setActiveTab('orders')}
             className={`p-3 rounded-2xl transition-all ${activeTab === 'orders' ? 'bg-primary-50 text-primary-600 font-bold px-5 flex items-center gap-2 ring-1 ring-primary-100' : 'text-slate-500 hover:bg-slate-50'}`}
@@ -237,10 +308,13 @@ const BuyerDashboard = () => {
               {['all', 'vegetables', 'fruits', 'grains', 'dairy', 'organic'].map((cat) => (
                 <button
                   key={cat}
-                  onClick={() => setFilter(cat)}
+                  onClick={() => {
+                    setFilter(cat);
+                    setActiveTab('browse');
+                  }}
                   className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl font-bold capitalize transition-all ${filter === cat ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50'}`}
                 >
-                  {cat} {filter === cat && <ChevronRight size={18} />}
+                  {formatCategoryLabel(cat)} {filter === cat && <ChevronRight size={18} />}
                 </button>
               ))}
             </div>
@@ -260,6 +334,12 @@ const BuyerDashboard = () => {
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'bids' ? 'bg-primary-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
               >
                 <MessageCircle size={20} /> My Bids
+              </button>
+              <button
+                onClick={() => setActiveTab('profile')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'profile' ? 'bg-primary-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
+              >
+                <User size={20} /> My Profile
               </button>
             </div>
           </div>
@@ -298,7 +378,7 @@ const BuyerDashboard = () => {
                     <div className="h-64 bg-slate-100 relative group-hover:scale-105 transition-transform duration-500">
                       <img src={p.image || 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&q=80&w=600'} alt={p.name} className="w-full h-full object-cover" />
                       <div className="absolute top-6 left-6">
-                        <span className="px-4 py-1.5 bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-black uppercase rounded-lg shadow-sm">{p.category}</span>
+                        <span className="px-4 py-1.5 bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-black uppercase rounded-lg shadow-sm">{formatCategoryLabel(p.category)}</span>
                       </div>
                       <button 
                         onClick={(e) => { e.stopPropagation(); addToCart(p); }}
@@ -521,6 +601,115 @@ const BuyerDashboard = () => {
               </div>
             </div>
           )}
+
+          {activeTab === 'profile' && (
+            <div className="max-w-3xl mx-auto space-y-10 animate-in slide-in-from-right-4 duration-700">
+              <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-10">
+                <h2 className="text-4xl font-extrabold text-slate-900 mb-2">Buyer Profile</h2>
+                <p className="text-slate-500 font-medium mb-8">Update your buyer account and delivery details.</p>
+
+                <form onSubmit={handleProfileSave} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Username</label>
+                      <input
+                        type="text"
+                        value={userProfile?.username || ''}
+                        disabled
+                        className="w-full px-6 py-4 bg-slate-100 border-2 border-slate-100 rounded-2xl text-slate-500 font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Role</label>
+                      <input
+                        type="text"
+                        value={userProfile?.role || 'buyer'}
+                        disabled
+                        className="w-full px-6 py-4 bg-slate-100 border-2 border-slate-100 rounded-2xl text-slate-500 font-bold capitalize"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Email</label>
+                      <input
+                        type="email"
+                        value={profileForm.email}
+                        onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                        className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Business Name</label>
+                      <input
+                        type="text"
+                        value={profileForm.business_name}
+                        onChange={(e) => setProfileForm({ ...profileForm, business_name: e.target.value })}
+                        className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">GSTIN</label>
+                    <input
+                      type="text"
+                      value={profileForm.gstin}
+                      onChange={(e) => setProfileForm({ ...profileForm, gstin: e.target.value })}
+                      className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Business / Shipping Address</label>
+                    <textarea
+                      value={profileForm.address}
+                      onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                      className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold min-h-[120px]"
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Latitude</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={profileForm.location_lat}
+                        onChange={(e) => setProfileForm({ ...profileForm, location_lat: e.target.value })}
+                        className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Longitude</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={profileForm.location_lng}
+                        onChange={(e) => setProfileForm({ ...profileForm, location_lng: e.target.value })}
+                        className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  {profileMessage && (
+                    <p className={`text-sm font-bold ${profileMessage.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+                      {profileMessage}
+                    </p>
+                  )}
+
+                  <button
+                    type="submit"
+                    disabled={profileSaving}
+                    className="px-8 py-4 bg-primary-600 text-white font-bold rounded-2xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all disabled:opacity-70"
+                  >
+                    {profileSaving ? 'Saving...' : 'Save Profile'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
@@ -536,7 +725,7 @@ const BuyerDashboard = () => {
             
             <div className="md:w-1/2 p-12 space-y-8 overflow-y-auto max-h-[80vh]">
               <div className="space-y-4">
-                <span className="px-4 py-1.5 bg-primary-100 text-primary-700 text-xs font-black uppercase rounded-lg">{selectedProduct.category}</span>
+                <span className="px-4 py-1.5 bg-primary-100 text-primary-700 text-xs font-black uppercase rounded-lg">{formatCategoryLabel(selectedProduct.category)}</span>
                 <h3 className="text-4xl font-black text-slate-900">{selectedProduct.name}</h3>
                 <div className="flex items-center gap-4">
                   <span className="text-3xl font-black text-primary-600">₹{selectedProduct.price}<span className="text-sm text-slate-400 font-bold ml-1">/{selectedProduct.unit || 'kg'}</span></span>

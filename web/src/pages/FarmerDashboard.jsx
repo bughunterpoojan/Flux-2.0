@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Package, ShoppingCart, TrendingUp, LogOut, 
   Trash2, Edit, ChevronRight, LayoutDashboard, History,
-  Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle
+  Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle, User
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
@@ -24,6 +24,16 @@ const FarmerDashboard = () => {
   const [counterPrice, setCounterPrice] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [profileForm, setProfileForm] = useState({
+    email: '',
+    business_name: '',
+    gstin: '',
+    address: '',
+    location_lat: '',
+    location_lng: ''
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileMessage, setProfileMessage] = useState('');
   const navigate = useNavigate();
 
   const openAddModal = () => {
@@ -61,6 +71,18 @@ const FarmerDashboard = () => {
     }
   }, [userProfile]);
 
+  useEffect(() => {
+    if (!userProfile) return;
+    setProfileForm({
+      email: userProfile.email || '',
+      business_name: userProfile.business_name || '',
+      gstin: userProfile.gstin || '',
+      address: userProfile.address || '',
+      location_lat: userProfile.location_lat ?? '',
+      location_lng: userProfile.location_lng ?? ''
+    });
+  }, [userProfile]);
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -87,6 +109,32 @@ const FarmerDashboard = () => {
   const handleLogout = () => {
     localStorage.clear();
     navigate('/login');
+  };
+
+  const handleProfileSave = async (e) => {
+    e.preventDefault();
+    setProfileSaving(true);
+    setProfileMessage('');
+
+    try {
+      const payload = {
+        email: profileForm.email,
+        business_name: profileForm.business_name,
+        gstin: profileForm.gstin,
+        address: profileForm.address,
+        location_lat: profileForm.location_lat === '' ? null : Number(profileForm.location_lat),
+        location_lng: profileForm.location_lng === '' ? null : Number(profileForm.location_lng)
+      };
+
+      const response = await api.patch('auth/profile/', payload);
+      setUserProfile(response.data);
+      setProfileMessage('Profile updated successfully.');
+    } catch (err) {
+      setProfileMessage('Unable to update profile. Please try again.');
+      console.error(err);
+    } finally {
+      setProfileSaving(false);
+    }
   };
 
   const getAiSuggestion = async () => {
@@ -264,6 +312,12 @@ const FarmerDashboard = () => {
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'history' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
             <History size={22} /> Sales History
+          </button>
+          <button 
+            onClick={() => setActiveTab('profile')}
+            className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'profile' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
+          >
+            <User size={22} /> My Profile
           </button>
         </nav>
 
@@ -459,6 +513,115 @@ const FarmerDashboard = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {activeTab === 'profile' && (
+          <div className="max-w-3xl animate-in fade-in duration-700">
+            <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-10">
+              <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Farmer Profile</h2>
+              <p className="text-slate-500 font-medium mb-8">Manage your account details for your farmer dashboard.</p>
+
+              <form onSubmit={handleProfileSave} className="space-y-6">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Username</label>
+                    <input
+                      type="text"
+                      value={userProfile?.username || ''}
+                      disabled
+                      className="w-full px-6 py-4 bg-slate-100 border-2 border-slate-100 rounded-2xl text-slate-500 font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Role</label>
+                    <input
+                      type="text"
+                      value={userProfile?.role || 'farmer'}
+                      disabled
+                      className="w-full px-6 py-4 bg-slate-100 border-2 border-slate-100 rounded-2xl text-slate-500 font-bold capitalize"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Email</label>
+                    <input
+                      type="email"
+                      value={profileForm.email}
+                      onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                      className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Farm Name</label>
+                    <input
+                      type="text"
+                      value={profileForm.business_name}
+                      onChange={(e) => setProfileForm({ ...profileForm, business_name: e.target.value })}
+                      className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase text-slate-400 ml-1">GSTIN</label>
+                  <input
+                    type="text"
+                    value={profileForm.gstin}
+                    onChange={(e) => setProfileForm({ ...profileForm, gstin: e.target.value })}
+                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase text-slate-400 ml-1">Farm Address</label>
+                  <textarea
+                    value={profileForm.address}
+                    onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold min-h-[120px]"
+                  />
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Latitude</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={profileForm.location_lat}
+                      onChange={(e) => setProfileForm({ ...profileForm, location_lat: e.target.value })}
+                      className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Longitude</label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={profileForm.location_lng}
+                      onChange={(e) => setProfileForm({ ...profileForm, location_lng: e.target.value })}
+                      className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                    />
+                  </div>
+                </div>
+
+                {profileMessage && (
+                  <p className={`text-sm font-bold ${profileMessage.includes('success') ? 'text-green-600' : 'text-red-600'}`}>
+                    {profileMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={profileSaving}
+                  className="px-8 py-4 bg-primary-600 text-white font-bold rounded-2xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all disabled:opacity-70"
+                >
+                  {profileSaving ? 'Saving...' : 'Save Profile'}
+                </button>
+              </form>
+            </div>
           </div>
         )}
       </main>

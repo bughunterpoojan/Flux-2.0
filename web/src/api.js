@@ -4,6 +4,8 @@ const api = axios.create({
   baseURL: 'http://localhost:8000/api/',
 });
 
+let refreshPromise = null;
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {
@@ -24,21 +26,37 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+    const status = error.response?.status;
+    const requestUrl = originalRequest?.url || '';
+
     // Skip interceptor for login requests
-    if (originalRequest.url.includes('auth/login/')) {
+    if (requestUrl.includes('auth/login/') || requestUrl.includes('auth/refresh/')) {
       return Promise.reject(error);
     }
 
-    if (error.response.status === 401 && !originalRequest._retry) {
+    if (status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
       const refreshToken = localStorage.getItem('refresh_token');
+
       if (refreshToken) {
         try {
-          const response = await axios.post('http://localhost:8000/api/auth/refresh/', {
-            refresh: refreshToken,
-          });
-          localStorage.setItem('access_token', response.data.access);
-          api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
+          // Collapse concurrent 401s into a single refresh request.
+          if (!refreshPromise) {
+            refreshPromise = axios
+              .post('http://localhost:8000/api/auth/refresh/', { refresh: refreshToken })
+              .then((response) => {
+                localStorage.setItem('access_token', response.data.access);
+                api.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`;
+                return response.data.access;
+              })
+              .finally(() => {
+                refreshPromise = null;
+              });
+          }
+
+          const newAccessToken = await refreshPromise;
+          originalRequest.headers = originalRequest.headers || {};
+          originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
           return api(originalRequest);
         } catch (err) {
           localStorage.removeItem('access_token');
@@ -47,6 +65,8 @@ api.interceptors.response.use(
           window.location.href = '/login';
         }
       } else {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('role');
         window.location.href = '/login';
       }
     }

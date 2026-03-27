@@ -9,7 +9,7 @@ from rest_framework.views import APIView
 from django.db import models
 from django.db.models import F, Sum
 from .models import User, Product, Order, OrderItem, Negotiation, Payment, Review, NegotiationMessage
-from .serializers import UserSerializer, RegisterSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, NegotiationSerializer, PaymentSerializer, ReviewSerializer, NegotiationMessageSerializer
+from .serializers import UserSerializer, ProfileUpdateSerializer, RegisterSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, NegotiationSerializer, PaymentSerializer, ReviewSerializer, NegotiationMessageSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import AllowAny
 from django.db.models import Sum, Count, F
@@ -27,9 +27,22 @@ class RegisterView(generics.CreateAPIView):
 
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
+
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+    def patch(self, request):
+        serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(request.user).data)
+
+    def put(self, request):
+        serializer = ProfileUpdateSerializer(request.user, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserSerializer(request.user).data)
 
 class AppyFlowGSTINView(APIView):
     permission_classes = (AllowAny,)
