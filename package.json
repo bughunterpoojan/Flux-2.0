@@ -1,0 +1,20 @@
+{
+  "scripts": {
+    "dev": "npm run dev --prefix web",
+    "web": "npm run dev --prefix web",
+    "api": "cd backend && .\\venv\\Scripts\\activate && python manage.py runserver",
+    "all": "npx -y concurrently \"npm run web\" \"npm run api\""
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.27",
+    "axios": "^1.13.6",
+    "framer-motion": "^12.38.0",
+    "lucide-react": "^1.7.0",
+    "postcss": "^8.5.8",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.2",
+    "recharts": "^3.8.1",
+    "tailwindcss": "^4.2.2",
+    "vite": "^8.0.3"
+  }
+}
