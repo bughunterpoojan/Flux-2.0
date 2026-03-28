@@ -282,7 +282,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text('${l10n.translate('farmer_seller')}: ${p.farmerName ?? "AgriFarmer"}', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey[600])),
+                Text('${l10n.translate('farmer_seller')}: ${p.farmerName ?? "Agro Sync Farmer"}', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey[600])),
                 const SizedBox(height: 10),
                 Text(p.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.outfit(fontSize: 14, color: Colors.blueGrey[500])),
                 const SizedBox(height: 20),

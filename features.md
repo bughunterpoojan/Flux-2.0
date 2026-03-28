@@ -1,4 +1,4 @@
-# Farm-to-Market Marketplace: Current Features
+# Agro Sync Marketplace: Current Features
 
 A complete overview of the decentralized agricultural marketplace platform designed to bridge the gap between farmers and buyers.
 

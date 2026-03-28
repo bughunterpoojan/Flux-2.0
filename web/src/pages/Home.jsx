@@ -32,7 +32,7 @@ const Home = () => {
               <option value="hi">हिंदी</option>
             </select>
           </div>
-          <Link to="/login" className="btn-secondary px-5 py-2 text-slate-700">{t('login')}</Link>
+          <Link to="/login?switch=1" className="btn-secondary px-5 py-2 text-slate-700">{t('login')}</Link>
           <Link to="/register" className="btn-primary px-5 py-2 text-white">{t('signup')}</Link>
         </div>
       </nav>

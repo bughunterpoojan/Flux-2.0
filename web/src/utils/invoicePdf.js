@@ -57,7 +57,7 @@ export const generateOrderInvoicePdf = ({ order, viewerRole, viewerProfile }) =>
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(26);
-  doc.text('AgriMarket Invoice', marginX + 18, headerTop + 40);
+  doc.text('Agro Sync Invoice', marginX + 18, headerTop + 40);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
@@ -176,8 +176,8 @@ export const generateOrderInvoicePdf = ({ order, viewerRole, viewerProfile }) =>
   doc.setTextColor(textMuted[0], textMuted[1], textMuted[2]);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
-  doc.text('This is a system-generated invoice for your AgriMarket transaction.', marginX, footerY);
-  doc.text('Thank you for supporting transparent farm-to-market trade.', pageWidth - marginX, footerY, { align: 'right' });
+  doc.text('This is a system-generated invoice for your Agro Sync transaction.', marginX, footerY);
+  doc.text('Thank you for supporting transparent trade with Agro Sync.', pageWidth - marginX, footerY, { align: 'right' });
 
   const roleSuffix = viewerRole === 'farmer' ? 'farmer' : 'buyer';
   doc.save(`invoice-order-${String(order.id).padStart(4, '0')}-${roleSuffix}.pdf`);

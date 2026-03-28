@@ -18,20 +18,20 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
-      child: const AgriMarketApp(),
+      child: const AgroSyncApp(),
     ),
   );
 }
 
-class AgriMarketApp extends StatelessWidget {
-  const AgriMarketApp({super.key});
+class AgroSyncApp extends StatelessWidget {
+  const AgroSyncApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     final languageProvider = Provider.of<LanguageProvider>(context);
 
     return MaterialApp(
-      title: 'AgriMarket',
+      title: 'Agro Sync',
       debugShowCheckedModeBanner: false,
       locale: languageProvider.currentLocale,
       supportedLocales: const [

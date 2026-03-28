@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Leaf, Mail, Lock, Loader2, ArrowRight, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import api, { setAuthToken } from '../api';
@@ -10,15 +10,49 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
 
   React.useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    const role = localStorage.getItem('role');
-    if (token && role) {
-      if (role === 'farmer') navigate('/farmer');
-      else navigate('/buyer');
-    }
-  }, [navigate]);
+    let cancelled = false;
+
+    const initLoginPage = async () => {
+      const params = new URLSearchParams(location.search);
+      const forceSwitchAccount = params.get('switch') === '1';
+
+      if (forceSwitchAccount) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('role');
+        setAuthToken(null);
+        return;
+      }
+
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      try {
+        const profile = await api.get('auth/profile/');
+        if (cancelled) return;
+
+        const role = profile?.data?.role;
+        if (!role) throw new Error('Missing role');
+
+        localStorage.setItem('role', role);
+        navigate(role === 'farmer' ? '/farmer' : '/buyer', { replace: true });
+      } catch (err) {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('role');
+        setAuthToken(null);
+      }
+    };
+
+    initLoginPage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, location.search]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

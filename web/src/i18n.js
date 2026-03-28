@@ -5,7 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 const resources = {
   en: {
     translation: {
-      "app_title": "Farm-to-Market",
+      "app_title": "Agro Sync",
       "welcome": "Welcome back!",
       "login": "Login",
       "signup": "Sign Up",
@@ -119,7 +119,7 @@ const resources = {
       "regenerate_pod": "Regenerate POD",
       "completed": "Completed",
       "welcome_back_title": "Welcome Back",
-      "login_subtitle": "Log in to your AgriMarket account",
+      "login_subtitle": "Log in to your Agro Sync account",
       "username": "Username",
       "password": "Password",
       "forgot_password": "Forgot?",
@@ -148,7 +148,7 @@ const resources = {
       "farm_address_label": "Farm Address",
       "farm_address_hint": "Complete address of your farm",
       "detect_location": "Detect Location",
-      "join_agrimarket": "Join AgriMarket",
+      "join_agrimarket": "Join Agro Sync",
       "join_subtitle": "Connect with the farming community and grow your business today.",
       "email": "Email",
       "login_now": "Log In",
@@ -306,7 +306,7 @@ const resources = {
   },
   hi: {
     translation: {
-      "app_title": "खेत से बाजार तक",
+      "app_title": "एग्रो सिंक",
       "welcome": "वापस स्वागत है!",
       "login": "लॉगिन",
       "signup": "साइन अप",
@@ -420,7 +420,7 @@ const resources = {
       "regenerate_pod": "POD फिर से जेनरेट करें",
       "completed": "पूरा हुआ",
       "welcome_back_title": "वापस स्वागत है",
-      "login_subtitle": "अपने AgriMarket खाते में लॉग इन करें",
+      "login_subtitle": "अपने Agro Sync खाते में लॉग इन करें",
       "username": "उपयोगकर्ता नाम",
       "password": "पासवर्ड",
       "forgot_password": "भूल गए?",
@@ -449,7 +449,7 @@ const resources = {
       "farm_address_label": "खेत का पता",
       "farm_address_hint": "आपके खेत का पूरा पता",
       "detect_location": "स्थान का पता लगाएं",
-      "join_agrimarket": "AgriMarket से जुड़ें",
+      "join_agrimarket": "Agro Sync से जुड़ें",
       "join_subtitle": "खेती समुदाय से जुड़ें और आज ही अपना व्यवसाय बढ़ाएं।",
       "email": "ईमेल",
       "login_now": "लॉग इन करें",

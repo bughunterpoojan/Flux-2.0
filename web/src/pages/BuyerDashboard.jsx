@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import api from '../api';
 import { generateOrderInvoicePdf } from '../utils/invoicePdf';
+import { getProductImage } from '../utils/productImage';
 
 const BuyerDashboard = () => {
   const { t, i18n } = useTranslation();
@@ -264,7 +265,7 @@ const BuyerDashboard = () => {
         key: razorpayRes.data.key_id,
         amount: razorpayRes.data.amount,
         currency: razorpayRes.data.currency,
-        name: "AgriMarket",
+        name: "Agro Sync",
         description: "Fresh Produce Purchase",
         order_id: razorpayRes.data.id,
         handler: async function (response) {
@@ -390,7 +391,7 @@ const BuyerDashboard = () => {
         key: razorpayRes.data.key_id,
         amount: razorpayRes.data.amount,
         currency: razorpayRes.data.currency,
-        name: 'AgriMarket',
+        name: 'Agro Sync',
         description: `Extra Shipping Payment - Order #${order.id}`,
         order_id: razorpayRes.data.id,
         handler: async function (response) {
@@ -693,7 +694,7 @@ const BuyerDashboard = () => {
                     className="bg-white rounded-[2.5rem] overflow-hidden shadow-sm border border-slate-100 hover:shadow-2xl hover:-translate-y-2 transition-all group flex flex-col cursor-pointer"
                   >
                     <div className="h-64 bg-slate-100 relative group-hover:scale-105 transition-transform duration-500">
-                      <img src={p.image || 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&q=80&w=600'} alt={p.name} className="w-full h-full object-cover" />
+                      <img src={getProductImage(p)} alt={p.name} className="w-full h-full object-cover" />
                       <div className="absolute top-6 left-6">
                         <span className="px-4 py-1.5 bg-white/90 backdrop-blur-md text-slate-900 text-[10px] font-black uppercase rounded-lg shadow-sm">{formatCategoryLabel(p.category)}</span>
                       </div>
@@ -714,7 +715,7 @@ const BuyerDashboard = () => {
                           <MapPin size={14} className="text-red-400" />
                           <span className="text-xs font-bold leading-none">{t('dist')}: {calculateDisplayDistance(p)}</span>
                           <div className="ml-auto flex items-center gap-1">
-                            <span className="text-xs font-bold px-2 py-0.5 bg-slate-100 rounded text-slate-600">{p.farmer_name || 'AgriFarmer'}</span>
+                            <span className="text-xs font-bold px-2 py-0.5 bg-slate-100 rounded text-slate-600">{p.farmer_name || 'Agro Sync Farmer'}</span>
                             <div className="flex items-center gap-0.5">
                               <span className="text-yellow-400">★</span>
                               <span className="text-xs font-bold text-slate-600">{p.farmer_avg_rating || 0}</span>
@@ -764,7 +765,7 @@ const BuyerDashboard = () => {
                         <div className="flex items-center gap-6">
                           <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden">
                             <img
-                              src={item.image || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&q=80&w=600'}
+                              src={getProductImage(item)}
                               alt={item.name}
                               className="w-full h-full object-cover"
                             />
@@ -894,14 +895,14 @@ const BuyerDashboard = () => {
                     )}
 
                     {order.status === 'accepted' && (
-                      <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 flex flex-wrap items-center justify-between gap-3">
+                      <div className="rounded-2xl border border-primary-100 bg-primary-50 p-4 flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="text-sm font-black text-indigo-700">Start logistics from buyer side</p>
-                          <p className="text-xs text-indigo-600 font-semibold">Select slot and plan, then request dispatch.</p>
+                          <p className="text-sm font-black text-primary-700">Start logistics from buyer side</p>
+                          <p className="text-xs text-primary-600 font-semibold">Select slot and plan, then request dispatch.</p>
                         </div>
                         <button
                           onClick={() => handleOpenLogistics(order)}
-                          className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-black hover:bg-indigo-700"
+                          className="px-4 py-2 rounded-xl bg-primary-600 text-white font-black hover:bg-primary-700"
                         >
                           Plan Logistics
                         </button>
@@ -942,17 +943,17 @@ const BuyerDashboard = () => {
                     )}
 
                     {order.status === 'shipped' && !order.pod_verified && (
-                      <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 flex flex-wrap items-center justify-between gap-3">
+                      <div className="rounded-2xl border border-primary-100 bg-primary-50 p-4 flex flex-wrap items-center justify-between gap-3">
                         <div>
-                          <p className="text-sm font-black text-blue-700">Confirm delivery with farmer POD code</p>
-                          <p className="text-xs text-blue-600 font-semibold">
+                          <p className="text-sm font-black text-primary-700">Confirm delivery with farmer POD code</p>
+                          <p className="text-xs text-primary-600 font-semibold">
                             {order.pod_configured ? 'Farmer has generated POD code. Enter it to complete delivery.' : 'Waiting for farmer to generate POD code.'}
                           </p>
                         </div>
                         <button
                           onClick={() => handleOpenLogistics(order)}
                           disabled={!order.pod_configured}
-                          className="px-4 py-2 rounded-xl bg-blue-600 text-white font-black hover:bg-blue-700 disabled:bg-blue-300"
+                          className="px-4 py-2 rounded-xl bg-primary-600 text-white font-black hover:bg-primary-700 disabled:bg-primary-300"
                         >
                           Enter POD
                         </button>
@@ -1034,7 +1035,7 @@ const BuyerDashboard = () => {
                         <button
                           key={slot}
                           onClick={() => setDeliverySlot(slot)}
-                          className={`px-3 py-2 rounded-lg text-xs font-black transition-colors ${deliverySlot === slot ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
+                          className={`px-3 py-2 rounded-lg text-xs font-black transition-colors ${deliverySlot === slot ? 'bg-primary-600 text-white' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
                         >
                           {slot}
                         </button>
@@ -1047,7 +1048,7 @@ const BuyerDashboard = () => {
                         <button
                           key={plan.id}
                           onClick={() => setSelectedLogisticsPlan(plan.id)}
-                          className={`w-full text-left rounded-2xl border p-4 transition-all ${selectedLogisticsPlan === plan.id ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white hover:border-indigo-200'}`}
+                          className={`w-full text-left rounded-2xl border p-4 transition-all ${selectedLogisticsPlan === plan.id ? 'border-primary-500 bg-primary-50' : 'border-slate-200 bg-white hover:border-primary-200'}`}
                         >
                           <div className="flex items-center justify-between">
                             <p className="font-black text-slate-900">{plan.title}</p>
@@ -1073,14 +1074,14 @@ const BuyerDashboard = () => {
                 {logisticsOrder.status === 'shipped' && (
                   <div className="space-y-4 mb-6">
                     <h4 className="text-xl font-black text-slate-900">Step 3: Confirm Delivery with POD</h4>
-                    <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
-                      <p className="text-sm font-bold text-blue-700 mb-2">Enter 4-digit POD code generated by farmer</p>
+                    <div className="rounded-2xl border border-primary-100 bg-primary-50 p-4">
+                      <p className="text-sm font-bold text-primary-700 mb-2">Enter 4-digit POD code generated by farmer</p>
                       <input
                         type="text"
                         maxLength={4}
                         value={podCodeInput}
                         onChange={(e) => setPodCodeInput(e.target.value.replace(/\D/g, ''))}
-                        className="w-full md:w-60 px-4 py-3 bg-white border border-blue-200 rounded-xl outline-none focus:border-blue-500 font-black text-lg tracking-[0.35em]"
+                        className="w-full md:w-60 px-4 py-3 bg-white border border-primary-200 rounded-xl outline-none focus:border-primary-500 font-black text-lg tracking-[0.35em]"
                         placeholder="0000"
                       />
                     </div>
@@ -1098,7 +1099,7 @@ const BuyerDashboard = () => {
                     <button
                       onClick={handleBuyerLogisticsProgress}
                       disabled={logisticsSubmitting}
-                      className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                      className="px-5 py-2.5 rounded-xl bg-primary-600 text-white font-bold hover:bg-primary-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
                     >
                       {logisticsSubmitting
                         ? 'Updating...'
@@ -1204,7 +1205,7 @@ const BuyerDashboard = () => {
                     <div key={neg.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between">
                       <div className="flex items-center gap-6">
                         <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden">
-                          <img src={neg.product_image} className="w-full h-full object-cover" />
+                          <img src={getProductImage({ product_image: neg.product_image, product_name: neg.product_name })} className="w-full h-full object-cover" />
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
@@ -1363,7 +1364,7 @@ const BuyerDashboard = () => {
             <button onClick={() => setSelectedProduct(null)} className="absolute top-8 right-8 z-10 text-slate-400 hover:text-slate-900 bg-white/80 backdrop-blur-md rounded-full p-2"><X size={28} /></button>
 
             <div className="md:w-1/2 h-80 md:h-auto bg-slate-100">
-              <img src={selectedProduct.image || 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&q=80&w=600'} className="w-full h-full object-cover" alt={selectedProduct.name} />
+              <img src={getProductImage(selectedProduct)} className="w-full h-full object-cover" alt={selectedProduct.name} />
             </div>
 
             <div className="md:w-1/2 p-12 space-y-8 overflow-y-auto max-h-[80vh]">
@@ -1388,7 +1389,7 @@ const BuyerDashboard = () => {
                   <div className="flex-1">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('farmer_seller')}</p>
                     <div className="flex items-center gap-2">
-                      <p className="text-lg font-black text-slate-900">{selectedProduct.farmer_name || 'AgriFarmer'}</p>
+                      <p className="text-lg font-black text-slate-900">{selectedProduct.farmer_name || 'Agro Sync Farmer'}</p>
                       <div className="flex items-center gap-0.5">
                         <span className="text-yellow-400 text-sm">★</span>
                         <span className="text-sm font-bold text-slate-600">{selectedProduct.farmer_avg_rating || 0}</span>

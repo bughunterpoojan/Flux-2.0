@@ -1,4 +1,4 @@
-# 🌿 AgriMarket: Decentralized Farm-to-Market Platform
+# 🌿 Agro Sync: Decentralized Farm-to-Market Platform
 
 A high-performance codebase for a decentralized agricultural marketplace bridging the gap between farmers and buyers. Built with a focus on fair negotiation, AI-driven logistics, and secure verification.
 

@@ -10,6 +10,7 @@ import api from '../api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import FarmerProfitDecisionDashboard from './FarmerProfitDecisionDashboard';
 import { generateOrderInvoicePdf } from '../utils/invoicePdf';
+import { getProductImage } from '../utils/productImage';
 
 const FarmerDashboard = () => {
   const { t, i18n } = useTranslation();
@@ -397,7 +398,7 @@ const FarmerDashboard = () => {
           <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white">
             <TrendingUp size={24} />
           </div>
-          <span className="text-2xl font-bold text-slate-900 tracking-tight">AgriFarmer</span>
+          <span className="text-2xl font-bold text-slate-900 tracking-tight">Agro Sync</span>
         </div>
 
         <nav className="flex-1 space-y-2">
@@ -598,7 +599,7 @@ const FarmerDashboard = () => {
             {products.map((product) => (
               <div key={product.id} className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-slate-100 hover:shadow-xl hover:-translate-y-1 transition-all group">
                 <div className="h-48 bg-slate-100 relative overflow-hidden">
-                  <img src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600'} alt={product.name} className="w-full h-full object-cover" />
+                  <img src={getProductImage(product)} alt={product.name} className="w-full h-full object-cover" />
                   <div className="absolute top-4 right-4 flex gap-2 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
                     <button
                       onClick={() => openEditModal(product)}
@@ -824,7 +825,7 @@ const FarmerDashboard = () => {
                       <div className="flex items-center gap-5">
                         <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
                           <img
-                            src={bid.product_image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600'}
+                            src={getProductImage({ product_image: bid.product_image, product_name: bid.product_name })}
                             alt={bid.product_name}
                             className="w-full h-full object-cover"
                           />

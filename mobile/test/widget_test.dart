@@ -13,7 +13,7 @@ import 'package:farm_to_market/main.dart';
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const AgriMarketApp());
+    await tester.pumpWidget(const AgroSyncApp());
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);

@@ -39,7 +39,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Text(
-          'AgriMarket',
+          'Agro Sync',
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         centerTitle: false,
