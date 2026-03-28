@@ -3,6 +3,7 @@ import re
 import requests
 import razorpay
 from decimal import Decimal
+from decimal import InvalidOperation
 from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -551,38 +552,69 @@ class NegotiationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(buyer=self.request.user)
 
+    def _ensure_farmer_actor(self, request, negotiation):
+        if negotiation.product.farmer_id != request.user.id:
+            raise ValidationError({'error': 'Only the product farmer can perform this action.'})
+
+    def _ensure_actionable_status(self, negotiation):
+        if negotiation.status in ['accepted', 'rejected']:
+            raise ValidationError({'error': f"Bid is already {negotiation.status} and cannot be changed."})
+
     @action(detail=True, methods=['post'])
     def accept(self, request, pk=None):
         negotiation = self.get_object()
-        if negotiation.status == 'rejected':
-            return Response({'error': 'Rejected bids cannot be accepted'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            self._ensure_farmer_actor(request, negotiation)
+            self._ensure_actionable_status(negotiation)
+        except ValidationError as exc:
+            return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
+
         negotiation.status = 'accepted'
-        negotiation.save()
-        return Response({'status': 'negotiation accepted'})
+        negotiation.save(update_fields=['status', 'updated_at'])
+        return Response({'status': 'negotiation accepted', 'negotiation': NegotiationSerializer(negotiation, context={'request': request}).data})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         negotiation = self.get_object()
+        try:
+            self._ensure_farmer_actor(request, negotiation)
+            self._ensure_actionable_status(negotiation)
+        except ValidationError as exc:
+            return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
+
         negotiation.status = 'rejected'
-        negotiation.save()
-        return Response({'status': 'negotiation rejected'})
+        negotiation.save(update_fields=['status', 'updated_at'])
+        return Response({'status': 'negotiation rejected', 'negotiation': NegotiationSerializer(negotiation, context={'request': request}).data})
 
     @action(detail=True, methods=['post'])
     def counter(self, request, pk=None):
         negotiation = self.get_object()
-        if negotiation.status == 'rejected':
-            return Response({'error': 'Rejected bids cannot be countered'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            self._ensure_farmer_actor(request, negotiation)
+            self._ensure_actionable_status(negotiation)
+        except ValidationError as exc:
+            return Response(exc.detail, status=status.HTTP_400_BAD_REQUEST)
+
         counter_price = request.data.get('counter_price')
         counter_message = request.data.get('message')
-        if not counter_price:
+
+        if counter_price in [None, '']:
             return Response({'error': 'counter_price is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        negotiation.farmer_counter_price = counter_price
+
+        try:
+            parsed_counter_price = Decimal(str(counter_price))
+        except (InvalidOperation, TypeError, ValueError):
+            return Response({'error': 'counter_price must be a valid number'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if parsed_counter_price <= 0:
+            return Response({'error': 'counter_price must be greater than 0'}, status=status.HTTP_400_BAD_REQUEST)
+
+        negotiation.farmer_counter_price = parsed_counter_price
         if counter_message is not None:
             negotiation.message = counter_message
         negotiation.status = 'countered'
-        negotiation.save()
-        return Response({'status': 'counter offer sent'})
+        negotiation.save(update_fields=['farmer_counter_price', 'message', 'status', 'updated_at'])
+        return Response({'status': 'counter offer sent', 'negotiation': NegotiationSerializer(negotiation, context={'request': request}).data})
 
 class NegotiationMessageViewSet(viewsets.ModelViewSet):
     serializer_class = NegotiationMessageSerializer

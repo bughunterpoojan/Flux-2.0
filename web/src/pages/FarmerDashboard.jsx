@@ -27,6 +27,7 @@ const FarmerDashboard = () => {
   const [showCounterModal, setShowCounterModal] = useState(null);
   const [counterPrice, setCounterPrice] = useState('');
   const [counterMessage, setCounterMessage] = useState('');
+  const [bidActionLoadingKey, setBidActionLoadingKey] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [listingError, setListingError] = useState('');
@@ -345,18 +346,43 @@ const FarmerDashboard = () => {
     }
   };
 
-  const handleNegotiationAction = async (id, action, counterValue = null, messageValue = '') => {
+  const handleNegotiationAction = async (bid, action, counterValue = null, messageValue = '') => {
+    if (!bid) return;
+
+    if (bid.status === 'accepted' || bid.status === 'rejected') {
+      alert(`This bid is already ${bid.status}.`);
+      return;
+    }
+
+    if (action === 'reject' && !window.confirm('Reject this bid permanently?')) {
+      return;
+    }
+
+    const payload = {};
+    if (action === 'counter') {
+      const parsedCounter = Number(counterValue);
+      if (!Number.isFinite(parsedCounter) || parsedCounter <= 0) {
+        alert('Please enter a valid counter price greater than 0.');
+        return;
+      }
+      payload.counter_price = parsedCounter;
+      payload.message = (messageValue || '').trim();
+    }
+
+    const actionKey = `${bid.id}-${action}`;
+    setBidActionLoadingKey(actionKey);
     try {
-      const payload = action === 'counter'
-        ? { counter_price: counterValue, message: messageValue || '' }
-        : {};
-      await api.post(`negotiations/${id}/${action}/`, payload);
+      await api.post(`negotiations/${bid.id}/${action}/`, payload);
       setShowCounterModal(null);
       setCounterPrice('');
       setCounterMessage('');
       fetchData();
     } catch (err) {
+      const apiMessage = err?.response?.data?.error || err?.response?.data?.detail || `Unable to ${action} this bid.`;
+      alert(Array.isArray(apiMessage) ? apiMessage.join(', ') : String(apiMessage));
       console.error(err);
+    } finally {
+      setBidActionLoadingKey('');
     }
   };
 
@@ -453,12 +479,14 @@ const FarmerDashboard = () => {
               </h1>
               <p className="text-slate-500 font-medium">{t('farm_happening')}</p>
             </div>
-            <button
-              onClick={openAddModal}
-              className="flex items-center gap-2 px-8 py-4 bg-primary-600 text-white font-bold rounded-2xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all hover:scale-[1.02]"
-            >
-              <Plus size={22} /> {t('add_new_crop')}
-            </button>
+            {activeTab === 'products' && (
+              <button
+                onClick={openAddModal}
+                className="flex items-center gap-2 px-8 py-4 bg-primary-600 text-white font-bold rounded-2xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all hover:scale-[1.02]"
+              >
+                <Plus size={22} /> {t('add_new_crop')}
+              </button>
+            )}
           </header>
         )}
 
@@ -833,31 +861,38 @@ const FarmerDashboard = () => {
                       </div>
 
                       <div className="flex flex-wrap gap-3 lg:justify-end">
-                        {bid.status !== 'rejected' ? (
+                        {bid.status === 'pending' || bid.status === 'countered' ? (
                           <>
                             <button
-                              onClick={() => handleNegotiationAction(bid.id, 'accept')}
-                              className="px-5 py-2.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition-colors"
+                              onClick={() => handleNegotiationAction(bid, 'accept')}
+                              disabled={bidActionLoadingKey.startsWith(`${bid.id}-`)}
+                              className="px-5 py-2.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                              {t('accept')}
+                              {bidActionLoadingKey === `${bid.id}-accept` ? t('updating') : t('accept')}
                             </button>
                             <button
                               onClick={() => {
                                 setShowCounterModal(bid);
-                                setCounterPrice(bid.offered_price || '');
-                                setCounterMessage('');
+                                setCounterPrice(String(bid.farmer_counter_price || bid.offered_price || ''));
+                                setCounterMessage(bid.message || '');
                               }}
-                              className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+                              disabled={bidActionLoadingKey.startsWith(`${bid.id}-`)}
+                              className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                              {t('counter')}
+                              {bidActionLoadingKey === `${bid.id}-counter` ? t('updating') : t('counter')}
                             </button>
                             <button
-                              onClick={() => handleNegotiationAction(bid.id, 'reject')}
-                              className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors"
+                              onClick={() => handleNegotiationAction(bid, 'reject')}
+                              disabled={bidActionLoadingKey.startsWith(`${bid.id}-`)}
+                              className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                             >
-                              {t('reject')}
+                              {bidActionLoadingKey === `${bid.id}-reject` ? t('updating') : t('reject')}
                             </button>
                           </>
+                        ) : bid.status === 'accepted' ? (
+                          <span className="px-4 py-2 rounded-xl bg-green-50 text-green-700 border border-green-100 text-xs font-black uppercase tracking-wide">
+                            Accepted and finalized
+                          </span>
                         ) : (
                           <span className="px-4 py-2 rounded-xl bg-red-50 text-red-700 border border-red-100 text-xs font-black uppercase tracking-wide">
                             {t('rejected_permanently')}
@@ -1206,10 +1241,11 @@ const FarmerDashboard = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleNegotiationAction(showCounterModal.id, 'counter', counterPrice, counterMessage)}
-                  className="px-4 py-2.5 rounded-xl bg-primary-600 text-white font-bold hover:bg-primary-700"
+                  onClick={() => handleNegotiationAction(showCounterModal, 'counter', counterPrice, counterMessage)}
+                  disabled={!counterPrice || Number(counterPrice) <= 0 || bidActionLoadingKey === `${showCounterModal.id}-counter`}
+                  className="px-4 py-2.5 rounded-xl bg-primary-600 text-white font-bold hover:bg-primary-700 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  {t('send_counter')}
+                  {bidActionLoadingKey === `${showCounterModal.id}-counter` ? t('updating') : t('send_counter')}
                 </button>
               </div>
             </div>
