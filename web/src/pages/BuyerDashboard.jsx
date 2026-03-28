@@ -3,13 +3,15 @@ import {
   Search, Filter, ShoppingCart, User, LogOut, 
   MapPin, Star, History, Package, ChevronRight,
   TrendingDown, MessageCircle, CreditCard, Loader2,
-  CheckCircle2, AlertCircle, ArrowRight, Store, X, Plus, Trash2, Download
+  CheckCircle2, AlertCircle, ArrowRight, Store, X, Plus, Trash2, Download, Globe
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api';
 import { generateOrderInvoicePdf } from '../utils/invoicePdf';
 
 const BuyerDashboard = () => {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('browse');
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -161,7 +163,7 @@ const BuyerDashboard = () => {
 
     if (!existing) {
       setCart([...cart, { ...product, price: finalPrice, quantity: 1 }]);
-      showToast(`${product.name} added to cart`);
+      showToast(t('added_to_cart', { name: product.name }));
       return;
     }
 
@@ -172,7 +174,7 @@ const BuyerDashboard = () => {
           : item
       )
     );
-    showToast(`${product.name} quantity updated in cart`);
+    showToast(t('quantity_updated', { name: product.name }));
   };
 
   const updateCartQuantity = (productId, nextQuantity) => {
@@ -524,7 +526,7 @@ const BuyerDashboard = () => {
           <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white">
             <TrendingDown size={24} />
           </div>
-          <span className="text-2xl font-black text-slate-900 tracking-tight">AgriBuyer</span>
+          <span className="text-2xl font-black text-slate-900 tracking-tight">{t('buyer_dashboard')}</span>
         </div>
 
         <div className="flex-1 max-w-2xl mx-12">
@@ -532,7 +534,7 @@ const BuyerDashboard = () => {
             <Search className="absolute left-6 top-4 text-slate-400 group-focus-within:text-primary-600 transition-colors" />
             <input 
               type="text" 
-              placeholder="Search wholesale fresh produce..." 
+              placeholder={t('search_hint')} 
               className="w-full pl-16 pr-6 py-4 bg-slate-100 border-none rounded-2xl outline-none focus:bg-white focus:ring-2 ring-primary-500/10 transition-all font-semibold"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -541,18 +543,30 @@ const BuyerDashboard = () => {
         </div>
 
         <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border rounded-lg group hover:border-primary-300 transition-colors">
+            <Globe className="w-4 h-4 text-slate-400 group-hover:text-primary-500" />
+            <select 
+              onChange={(e) => i18n.changeLanguage(e.target.value)}
+              value={i18n.language}
+              className="bg-transparent text-sm font-semibold text-slate-600 focus:outline-none cursor-pointer"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिंदी</option>
+            </select>
+          </div>
+
           <button
             onClick={() => setActiveTab('profile')}
             className={`p-3 rounded-2xl transition-all ${activeTab === 'profile' ? 'bg-primary-50 text-primary-600 font-bold px-5 flex items-center gap-2 ring-1 ring-primary-100' : 'text-slate-500 hover:bg-slate-50'}`}
           >
-            {activeTab === 'profile' ? <><User size={20}/> My Profile</> : <User size={24}/>}
+            {activeTab === 'profile' ? <><User size={20}/> {t('profile')}</> : <User size={24}/>}
           </button>
 
           <button 
             onClick={() => setActiveTab('orders')}
             className={`p-3 rounded-2xl transition-all ${activeTab === 'orders' ? 'bg-primary-50 text-primary-600 font-bold px-5 flex items-center gap-2 ring-1 ring-primary-100' : 'text-slate-500 hover:bg-slate-50'}`}
           >
-            {activeTab === 'orders' ? <><History size={20}/> My Orders</> : <History size={24}/>}
+            {activeTab === 'orders' ? <><History size={20}/> {t('my_orders')}</> : <History size={24}/>}
           </button>
           
           <button 
@@ -582,7 +596,7 @@ const BuyerDashboard = () => {
         {/* Sidebar Filters */}
         <aside className="w-80 bg-white border-r border-slate-100 p-8 space-y-10 overflow-y-auto">
           <div className="space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">Categories</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">{t('categories')}</h3>
             <div className="space-y-2">
               {['all', 'vegetables', 'fruits', 'grains', 'dairy', 'organic'].map((cat) => (
                 <button
@@ -593,36 +607,35 @@ const BuyerDashboard = () => {
                   }}
                   className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl font-bold capitalize transition-all ${filter === cat ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50'}`}
                 >
-                  {formatCategoryLabel(cat)} {filter === cat && <ChevronRight size={18} />}
+                  {t(cat)} {filter === cat && <ChevronRight size={18} />}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">My Activity</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest text-slate-400">{t('my_activity')}</h3>
             <div className="space-y-2">
               <button 
                 onClick={() => setActiveTab('orders')}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'orders' ? 'bg-primary-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
               >
-                <Package size={20} /> My Orders
+                <Package size={20} /> {t('my_orders')}
               </button>
               <button 
                 onClick={() => setActiveTab('bids')}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'bids' ? 'bg-primary-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
               >
-                <MessageCircle size={20} /> My Bids
+                <MessageCircle size={20} /> {t('bids')}
               </button>
               <button
                 onClick={() => setActiveTab('profile')}
                 className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-all ${activeTab === 'profile' ? 'bg-primary-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
               >
-                <User size={20} /> My Profile
+                <User size={20} /> {t('profile')}
               </button>
             </div>
           </div>
-
         </aside>
 
         {/* Product Grid / Cart / Orders */}
@@ -631,11 +644,11 @@ const BuyerDashboard = () => {
             <div className="space-y-10">
               <div className="flex items-end justify-between">
                 <div>
-                  <h2 className="text-4xl font-extrabold text-slate-900 mb-2">Fresh Collection</h2>
-                  <p className="text-slate-500 font-medium">Over {products.length} types of produce ready for harvest.</p>
+                  <h2 className="text-4xl font-extrabold text-slate-900 mb-2">{t('fresh_collection')}</h2>
+                  <p className="text-slate-500 font-medium">{t('produce_ready', { count: products.length })}</p>
                 </div>
                 <div className="flex gap-4">
-                  <span className="px-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-600">Sort by: Relevancy</span>
+                  <span className="px-4 py-2 bg-white border border-slate-200 rounded-xl font-bold text-slate-600">{t('sort_by')}: {t('relevancy')}</span>
                 </div>
               </div>
 
@@ -666,7 +679,7 @@ const BuyerDashboard = () => {
                         </div>
                         <div className="flex items-center gap-2 text-slate-500">
                           <MapPin size={14} className="text-red-400" />
-                          <span className="text-xs font-bold leading-none">Dist: {calculateDisplayDistance(p)}</span>
+                          <span className="text-xs font-bold leading-none">{t('dist')}: {calculateDisplayDistance(p)}</span>
                           <div className="ml-auto flex items-center gap-1">
                             <span className="text-xs font-bold px-2 py-0.5 bg-slate-100 rounded text-slate-600">{p.farmer_name || 'AgriFarmer'}</span>
                             <div className="flex items-center gap-0.5">
@@ -683,7 +696,7 @@ const BuyerDashboard = () => {
                           onClick={(e) => { e.stopPropagation(); addToCart(p); }}
                           className="flex-1 py-4 bg-slate-900 text-white font-black rounded-2xl shadow-xl shadow-slate-200 hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
                         >
-                          <ShoppingCart size={18} /> Buy Now
+                          <ShoppingCart size={18} /> {t('buy_now')}
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setShowNegotiate(p); }}
@@ -702,12 +715,12 @@ const BuyerDashboard = () => {
           {activeTab === 'cart' && (
             <div className="max-w-5xl mx-auto space-y-8 animate-in slide-in-from-left-4 duration-700">
               <div className="flex items-end justify-between">
-                <h2 className="text-4xl font-extrabold text-slate-900">Checkout Basket</h2>
+                <h2 className="text-4xl font-extrabold text-slate-900">{t('checkout_basket')}</h2>
                 <button
                   onClick={() => setActiveTab('browse')}
                   className="px-5 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-colors"
                 >
-                  Continue Shopping
+                  {t('continue_shopping')}
                 </button>
               </div>
               {cart.length > 0 ? (
@@ -724,9 +737,9 @@ const BuyerDashboard = () => {
                             />
                           </div>
                           <div>
-                            <h4 className="text-xl font-black text-slate-900">{item.name}</h4>
-                            <p className="text-slate-500 font-bold">₹{item.price}/{item.unit}</p>
-                            <p className="text-xs text-slate-400 font-bold mt-1">Line Total: ₹{(item.price * (Number(item.quantity) || 0)).toFixed(2)}</p>
+                            <h4 className="text-xl font-black text-slate-900">{t(item.name)}</h4>
+                            <p className="text-slate-500 font-bold">₹{item.price}/{t(item.unit)}</p>
+                            <p className="text-xs text-slate-400 font-bold mt-1">{t('line_total_amount', { amount: (item.price * (Number(item.quantity) || 0)).toFixed(2) })}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -764,35 +777,35 @@ const BuyerDashboard = () => {
                   </div>
                   <div className="space-y-8">
                     <div className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6 md:sticky md:top-8">
-                      <h3 className="text-2xl font-black text-slate-900">Summary</h3>
+                      <h3 className="text-2xl font-black text-slate-900">{t('summary')}</h3>
                       <div className="space-y-4 font-bold text-slate-500">
-                        <div className="flex justify-between"><span>Subtotal</span><span className="text-slate-900">₹{cartSubtotal.toFixed(2)}</span></div>
+                        <div className="flex justify-between"><span>{t('subtotal')}</span><span className="text-slate-900">₹{cartSubtotal.toFixed(2)}</span></div>
                         <div className="flex justify-between items-center text-xs">
                           <div className="flex items-center gap-1">
-                            <span>Logistics Fee</span>
-                            <span className="px-1.5 py-0.5 bg-primary-100 text-primary-700 rounded text-[10px] uppercase font-black">AI Quote</span>
+                            <span>{t('logistics_fee')}</span>
+                            <span className="px-1.5 py-0.5 bg-primary-100 text-primary-700 rounded text-[10px] uppercase font-black">{t('ai_quote')}</span>
                           </div>
                           {logisticsLoading ? <Loader2 size={12} className="animate-spin" /> : <span className="text-slate-900 text-sm">₹{logisticsFee}</span>}
                         </div>
                         <div className="flex justify-between text-xs italic">
-                          <span>Total Distance</span>
+                          <span>{t('total_dist')}</span>
                           <span>{distanceKm}km</span>
                         </div>
-                        <div className="flex justify-between"><span>Tax (GST)</span><span className="text-slate-900">₹0.00</span></div>
+                        <div className="flex justify-between"><span>{t('tax')}</span><span className="text-slate-900">₹0.00</span></div>
                       </div>
                       <div className="pt-6 border-t border-slate-100 flex justify-between items-center text-3xl font-black text-slate-900">
-                        <span>Total</span>
+                        <span>{t('total')}</span>
                         <span>₹{cartTotal.toFixed(2)}</span>
                       </div>
                       <p className="text-xs text-slate-500 font-semibold bg-slate-50 rounded-xl px-3 py-2">
-                        Secure payment gateway powered by Razorpay. Your order is confirmed after payment verification.
+                        {t('secure_payment')}
                       </p>
                       <button 
                         onClick={handleCheckout}
                         disabled={checkingOut}
                         className="w-full py-5 bg-primary-600 text-white text-xl font-black rounded-3xl shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all flex items-center justify-center gap-3"
                       >
-                        {checkingOut ? <Loader2 className="animate-spin" /> : <><CreditCard /> Pay with Razorpay</>}
+                        {checkingOut ? <Loader2 className="animate-spin" /> : <><CreditCard /> {t('pay_with_razorpay')}</>}
                       </button>
                     </div>
                   </div>
@@ -802,8 +815,8 @@ const BuyerDashboard = () => {
                   <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto text-slate-300">
                     <ShoppingCart size={48} />
                   </div>
-                  <h3 className="text-2xl font-bold text-slate-900">Your basket is empty</h3>
-                  <button onClick={() => setActiveTab('browse')} className="px-10 py-4 bg-primary-600 text-white font-bold rounded-2xl hover:scale-105 transition-transform">Browse Fresh Produce</button>
+                  <h3 className="text-2xl font-bold text-slate-900">{t('empty_basket')}</h3>
+                  <button onClick={() => setActiveTab('browse')} className="px-10 py-4 bg-primary-600 text-white font-bold rounded-2xl hover:scale-105 transition-transform">{t('browse_produce')}</button>
                 </div>
               )}
             </div>
@@ -811,18 +824,18 @@ const BuyerDashboard = () => {
 
           {activeTab === 'orders' && (
             <div className="max-w-4xl mx-auto space-y-10 animate-in slide-in-from-right-4 duration-700">
-              <h2 className="text-4xl font-extrabold text-slate-900">Order Tracking</h2>
+              <h2 className="text-4xl font-extrabold text-slate-900">{t('order_tracking')}</h2>
               <div className="space-y-6">
                 {orders.map((order) => (
                   <div key={order.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-6">
-                      <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+                       <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
                         <Package size={32} />
                       </div>
                       <div>
-                        <h4 className="text-xl font-black text-slate-900">Order #{order.id}</h4>
-                        <p className="text-slate-500 font-bold">Placed on {new Date(order.created_at).toLocaleDateString()}</p>
+                        <h4 className="text-xl font-black text-slate-900">{t('order_num', { id: order.id })}</h4>
+                        <p className="text-slate-500 font-bold">{t('placed_on_date', { date: new Date(order.created_at).toLocaleDateString() })}</p>
                       </div>
                       </div>
                       <div className="flex flex-col items-end gap-1">
@@ -1085,7 +1098,7 @@ const BuyerDashboard = () => {
 
                 <form onSubmit={handleSubmitReview} className="space-y-6">
                   <div>
-                    <label className="text-xs font-black uppercase tracking-wide text-slate-400">Product</label>
+                    <label className="text-xs font-black uppercase tracking-wide text-slate-400">{t('product')}</label>
                     <select
                       value={reviewProductId}
                       onChange={(e) => handleReviewProductChange(e.target.value)}
@@ -1098,7 +1111,7 @@ const BuyerDashboard = () => {
                   </div>
 
                   <div>
-                    <label className="text-xs font-black uppercase tracking-wide text-slate-400">Farmer Rating</label>
+                    <label className="text-xs font-black uppercase tracking-wide text-slate-400">{t('farmer_rating')}</label>
                     <div className="flex items-center gap-2 mt-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <button
@@ -1115,12 +1128,12 @@ const BuyerDashboard = () => {
                   </div>
 
                   <div>
-                    <label className="text-xs font-black uppercase tracking-wide text-slate-400">Buyer Feedback</label>
+                    <label className="text-xs font-black uppercase tracking-wide text-slate-400">{t('buyer_feedback')}</label>
                     <textarea
                       value={reviewComment}
                       onChange={(e) => setReviewComment(e.target.value)}
                       rows={4}
-                      placeholder="Write your feedback about crop quality, packaging, and delivery coordination..."
+                      placeholder={t('feedback_placeholder')}
                       className="mt-2 w-full px-4 py-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-yellow-500 resize-none"
                     />
                   </div>
@@ -1131,14 +1144,14 @@ const BuyerDashboard = () => {
                       onClick={() => setReviewOrder(null)}
                       className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
                     >
-                      Cancel
+                      {t('cancel')}
                     </button>
                     <button
                       type="submit"
                       disabled={reviewSubmitting}
                       className="px-5 py-2.5 rounded-xl bg-yellow-500 text-white font-black hover:bg-yellow-600 disabled:bg-yellow-300"
                     >
-                      {reviewSubmitting ? 'Saving...' : 'Submit Feedback'}
+                      {reviewSubmitting ? t('saving') : t('submit_feedback')}
                     </button>
                   </div>
                 </form>
@@ -1169,14 +1182,14 @@ const BuyerDashboard = () => {
                               neg.status === 'rejected' ? 'bg-red-100 text-red-600' :
                               'bg-orange-100 text-orange-600'
                             }`}>
-                              {neg.status}
+                              {t(neg.status)}
                             </span>
                           </div>
                           <div className="flex items-center gap-4 mt-1">
                             <p className="text-slate-400 font-bold line-through text-sm">₹{neg.original_price}</p>
-                            <p className="text-primary-600 font-black">Your Offer: ₹{neg.offered_price}</p>
+                            <p className="text-primary-600 font-black">{t('your_offer')}: ₹{neg.offered_price}</p>
                             {neg.farmer_counter_price && (
-                              <p className="text-orange-500 font-black">Counter: ₹{neg.farmer_counter_price}</p>
+                              <p className="text-orange-500 font-black">{t('counter')}: ₹{neg.farmer_counter_price}</p>
                             )}
                           </div>
                         </div>
@@ -1187,11 +1200,11 @@ const BuyerDashboard = () => {
                             onClick={() => handleBidPurchase(neg)}
                             className="px-6 py-3 bg-primary-600 text-white font-bold rounded-2xl hover:bg-primary-700 transition-all flex items-center gap-2"
                           >
-                            <ShoppingCart size={18} /> Purchase Now
+                            <ShoppingCart size={18} /> {t('purchase_now')}
                           </button>
                         )}
                         {neg.status === 'pending' && (
-                          <p className="text-slate-400 font-bold italic">Waiting for farmer...</p>
+                          <p className="text-slate-400 font-bold italic">{t('waiting_farmer')}</p>
                         )}
                       </div>
                     </div>
@@ -1204,13 +1217,13 @@ const BuyerDashboard = () => {
           {activeTab === 'profile' && (
             <div className="max-w-3xl mx-auto space-y-10 animate-in slide-in-from-right-4 duration-700">
               <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-10">
-                <h2 className="text-4xl font-extrabold text-slate-900 mb-2">Buyer Profile</h2>
-                <p className="text-slate-500 font-medium mb-8">Update your buyer account and delivery details.</p>
+                <h2 className="text-4xl font-extrabold text-slate-900 mb-2">{t('buyer_profile')}</h2>
+                <p className="text-slate-500 font-medium mb-8">{t('buyer_profile_subtitle')}</p>
 
                 <form onSubmit={handleProfileSave} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Username</label>
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('username')}</label>
                       <input
                         type="text"
                         value={userProfile?.username || ''}
@@ -1219,7 +1232,7 @@ const BuyerDashboard = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Role</label>
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('role')}</label>
                       <input
                         type="text"
                         value={userProfile?.role || 'buyer'}
@@ -1231,7 +1244,7 @@ const BuyerDashboard = () => {
 
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Email</label>
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('email')}</label>
                       <input
                         type="email"
                         value={profileForm.email}
@@ -1240,7 +1253,7 @@ const BuyerDashboard = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Business Name</label>
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('business_name')}</label>
                       <input
                         type="text"
                         value={profileForm.business_name}
@@ -1251,7 +1264,7 @@ const BuyerDashboard = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-slate-400 ml-1">GSTIN</label>
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('business_verification')}</label>
                     <input
                       type="text"
                       value={profileForm.gstin}
@@ -1261,7 +1274,7 @@ const BuyerDashboard = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Business / Shipping Address</label>
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('shipping_address_label')}</label>
                     <textarea
                       value={profileForm.address}
                       onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
@@ -1271,7 +1284,7 @@ const BuyerDashboard = () => {
 
                   <div className="grid md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Latitude</label>
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('lat')}</label>
                       <input
                         type="number"
                         step="any"
@@ -1281,7 +1294,7 @@ const BuyerDashboard = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase text-slate-400 ml-1">Longitude</label>
+                      <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('lng')}</label>
                       <input
                         type="number"
                         step="any"
@@ -1303,7 +1316,7 @@ const BuyerDashboard = () => {
                     disabled={profileSaving}
                     className="px-8 py-4 bg-primary-600 text-white font-bold rounded-2xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all disabled:opacity-70"
                   >
-                    {profileSaving ? 'Saving...' : 'Save Profile'}
+                    {profileSaving ? t('saving') : t('save_profile')}
                   </button>
                 </form>
               </div>
@@ -1342,7 +1355,7 @@ const BuyerDashboard = () => {
                     <Store size={24} />
                   </div>
                   <div className="flex-1">
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Farmer</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('farmer_seller')}</p>
                     <div className="flex items-center gap-2">
                       <p className="text-lg font-black text-slate-900">{selectedProduct.farmer_name || 'AgriFarmer'}</p>
                       <div className="flex items-center gap-0.5">
@@ -1358,14 +1371,14 @@ const BuyerDashboard = () => {
                     <MapPin size={24} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Location</p>
+                    <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">{t('farm_address_label')}</p>
                     <p className="text-lg font-black text-slate-900">{selectedProduct.address || 'Farm Land'} ({calculateDisplayDistance(selectedProduct)} away)</p>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <h4 className="text-xl font-black text-slate-900">Description</h4>
+                <h4 className="text-xl font-black text-slate-900">{t('description')}</h4>
                 <p className="text-slate-500 font-medium leading-relaxed">{selectedProduct.description}</p>
               </div>
 
@@ -1374,7 +1387,7 @@ const BuyerDashboard = () => {
                   onClick={() => { addToCart(selectedProduct); setSelectedProduct(null); }}
                   className="flex-1 py-5 bg-primary-600 text-white text-xl font-black rounded-3xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all flex items-center justify-center gap-3"
                 >
-                  <ShoppingCart size={24} /> Add to Basket
+                  <ShoppingCart size={24} /> {t('add_to_basket')}
                 </button>
                 <button 
                   onClick={() => { setShowNegotiate(selectedProduct); setSelectedProduct(null); }}
@@ -1393,9 +1406,9 @@ const BuyerDashboard = () => {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
           <div className="bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl relative animate-in zoom-in-95 duration-300">
             <button onClick={() => setShowNegotiate(null)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900"><X size={28} /></button>
-            <h3 className="text-3xl font-black text-slate-900 mb-2">Negotiate Price</h3>
+            <h3 className="text-3xl font-black text-slate-900 mb-2">{t('negotiate_price')}</h3>
             <div className="mb-8">
-              <p className="text-slate-500 font-medium">Send an offer directly to</p>
+              <p className="text-slate-500 font-medium">{t('send_offer_to')}</p>
               <div className="flex items-center gap-2 mt-1">
                 <span className="font-black text-slate-900">{showNegotiate.farmer_name}</span>
                 <div className="flex items-center gap-0.5">
@@ -1408,33 +1421,33 @@ const BuyerDashboard = () => {
             
             <form onSubmit={handleNegotiate} className="space-y-6">
               <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center">
-                <span className="font-bold text-slate-500">Original Price</span>
+                <span className="font-bold text-slate-500">{t('original_price')}</span>
                 <span className="text-xl font-black text-slate-900">₹{showNegotiate.price}<span className="text-sm font-bold text-slate-400">/{showNegotiate.unit}</span></span>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-black text-slate-900 ml-1">Your Offer Price</label>
+                <label className="text-sm font-black text-slate-900 ml-1">{t('your_offer_price')}</label>
                 <div className="relative">
                   <span className="absolute left-6 top-4 font-black text-slate-400">₹</span>
                   <input 
                     type="number" 
                     required
                     className="w-full pl-12 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-black"
-                    placeholder="Enter low or fair price"
+                    placeholder={t('enter_offer_hint')}
                     value={negotiationPrice}
                     onChange={(e) => setNegotiationPrice(e.target.value)}
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-black text-slate-900 ml-1">Message (Optional)</label>
+                <label className="text-sm font-black text-slate-900 ml-1">{t('message_optional')}</label>
                 <textarea 
                   className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold min-h-[100px]"
-                  placeholder="Ask about bulk discounts or quality..."
+                  placeholder={t('ask_bulk_hint')}
                   value={negotiationMessage}
                   onChange={(e) => setNegotiationMessage(e.target.value)}
                 />
               </div>
-              <button type="submit" className="w-full py-5 bg-primary-600 text-white text-xl font-black rounded-3xl hover:bg-primary-700 transition-all shadow-xl shadow-primary-200">Send Price Offer</button>
+              <button type="submit" className="w-full py-5 bg-primary-600 text-white text-xl font-black rounded-3xl hover:bg-primary-700 transition-all shadow-xl shadow-primary-200">{t('send_price_offer')}</button>
             </form>
           </div>
         </div>
@@ -1448,7 +1461,7 @@ const BuyerDashboard = () => {
                 <CheckCircle2 className="w-6 h-6 text-emerald-600" />
               </div>
               <div className="flex-1">
-                <p className="text-lg font-black text-slate-900">Added To Cart</p>
+                <p className="text-lg font-black text-slate-900">{t('added_to_cart_title')}</p>
                 <p className="text-sm font-semibold text-slate-600 mt-1">{toast.message}</p>
               </div>
             </div>
@@ -1461,13 +1474,13 @@ const BuyerDashboard = () => {
                 }}
                 className="px-4 py-2 rounded-xl bg-primary-600 text-white text-sm font-black hover:bg-primary-700 transition-colors"
               >
-                View Cart
+                {t('view_cart')}
               </button>
               <button
                 onClick={() => setToast({ show: false, message: '' })}
                 className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-sm font-black hover:bg-slate-200 transition-colors"
               >
-                Dismiss
+                {t('dismiss')}
               </button>
             </div>
           </div>

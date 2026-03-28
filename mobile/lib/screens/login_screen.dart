@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
-import 'buyer_home.dart';
+import 'buyer_home_shell.dart';
 import 'farmer_home.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -38,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const BuyerHomeScreen()),
+            MaterialPageRoute(builder: (context) => const BuyerHomeShell()),
           );
         }
       }
@@ -66,8 +66,8 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 32),
               CircleAvatar(
                 radius: 32,
-                backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                child: const Icon(Icons.eco, size: 32, color: Color(0xFF3e9150)),
+                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                child: const Icon(Icons.eco, size: 32, color: Color(0xFF16A34A)),
               ),
               const SizedBox(height: 32),
               Text(
@@ -99,13 +99,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleLogin,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3e9150),
+                    backgroundColor: const Color(0xFF16A34A),
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
                     elevation: 8,
-                    shadowColor: const Color(0xFF3e9150).withValues(alpha: 0.3),
+                    shadowColor: const Color(0xFF16A34A).withOpacity(0.3),
                   ),
                   child: _isLoading 
                     ? const CircularProgressIndicator(color: Colors.white)
@@ -121,7 +121,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: () {},
                   child: const Text(
                     "Don't have an account? Sign Up",
-                    style: TextStyle(color: Color(0xFF3e9150), fontWeight: FontWeight.bold),
+                    style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

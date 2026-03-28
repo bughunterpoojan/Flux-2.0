@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 
 class FarmerOrdersScreen extends StatefulWidget {
   const FarmerOrdersScreen({super.key});
@@ -37,10 +38,12 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
       await _apiService.updateOrderStatus(id, nextStatus);
       if (!mounted) return;
       _refresh();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order marked as $nextStatus')));
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.translate('order_status_update')} $nextStatus')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.translate('error_prefix')} $e')));
     }
   }
 
@@ -116,7 +119,7 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.blueGrey[100]!),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -157,17 +160,78 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
                 ],
               ),
               if (status != 'delivered' && status != 'cancelled')
-                ElevatedButton(
-                  onPressed: () => _updateStatus(id, status),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-                  child: Text(
-                    status == 'pending' ? 'Accept Order' : 
-                    status == 'accepted' ? 'Mark Shipped' : 
-                    status == 'shipped' ? 'Mark Delivered' : 'Done',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
+                Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => _updateStatus(id, status),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+                      child: Text(
+                        status == 'pending' ? 'Accept Order' : 
+                        status == 'accepted' ? 'Mark Shipped' : 'Done',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ),
+                    if (status == 'shipped')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: TextButton.icon(
+                          onPressed: () => _showGeneratePodDialog(id),
+                          icon: const Icon(Icons.vpn_key_outlined, size: 16),
+                          label: const Text('Generate POD'),
+                          style: TextButton.styleFrom(foregroundColor: Colors.blueGrey),
+                        ),
+                      ),
+                  ],
                 ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showGeneratePodDialog(int orderId) async {
+    final TextEditingController podController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Generate POD Code'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Create a 4-digit code to share with the buyer upon delivery.'),
+            const SizedBox(height: 20),
+            TextField(
+              controller: podController,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
+              decoration: InputDecoration(
+                hintText: '1234',
+                counterText: '',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (podController.text.length != 4) return;
+              try {
+                await _apiService.setPodCode(orderId, podController.text);
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('POD code generated successfully!')));
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
+            },
+            child: const Text('Save'),
           ),
         ],
       ),
@@ -183,7 +247,7 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
       child: Text(status.toUpperCase(), style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.5)),
     );
   }

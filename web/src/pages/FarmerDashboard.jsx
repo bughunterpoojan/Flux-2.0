@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Package, ShoppingCart, TrendingUp, LogOut, 
   Trash2, Edit, ChevronRight, LayoutDashboard, History,
-  Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle, User, BarChart3, Star, Download
+  Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle, User, BarChart3, Star, Download, Globe
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import api from '../api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import FarmerProfitDecisionDashboard from './FarmerProfitDecisionDashboard';
 import { generateOrderInvoicePdf } from '../utils/invoicePdf';
 
 const FarmerDashboard = () => {
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('overview');
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -214,10 +216,10 @@ const FarmerDashboard = () => {
   };
 
   const stageLabel = (stage) => {
-    if (stage === 'pending') return 'Order Placed';
-    if (stage === 'accepted') return 'Farmer Accepted';
-    if (stage === 'shipped') return 'Shipped';
-    return 'Delivered';
+    if (stage === 'pending') return t('pending');
+    if (stage === 'accepted') return t('accepted');
+    if (stage === 'shipped') return t('shipped');
+    return t('delivered');
   };
 
   const handleDownloadBill = (order) => {
@@ -377,51 +379,65 @@ const FarmerDashboard = () => {
             onClick={() => setActiveTab('overview')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'overview' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
-            <LayoutDashboard size={22} /> Overview
+            <LayoutDashboard size={22} /> {t('overview')}
           </button>
           <button
             onClick={() => setActiveTab('profit')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'profit' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
-            <BarChart3 size={22} /> Profit Dashboard
+            <BarChart3 size={22} /> {t('profit_dashboard')}
           </button>
           <button 
             onClick={() => setActiveTab('products')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'products' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
-            <Package size={22} /> My Products
+            <Package size={22} /> {t('my_crops')}
           </button>
           <button 
             onClick={() => setActiveTab('orders')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'orders' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
-            <ShoppingCart size={22} /> Incoming Orders
+            <ShoppingCart size={22} /> {t('incoming_orders')}
           </button>
           <button 
             onClick={() => setActiveTab('bids')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'bids' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
-            <MessageCircle size={22} /> Active Bids
+            <MessageCircle size={22} /> {t('active_bids')}
           </button>
           <button 
             onClick={() => setActiveTab('history')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'history' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
-            <History size={22} /> Sales History
+            <History size={22} /> {t('sales_history')}
           </button>
           <button 
             onClick={() => setActiveTab('profile')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'profile' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
-            <User size={22} /> My Profile
+            <User size={22} /> {t('profile')}
           </button>
         </nav>
 
+        <div className="mb-6 px-4">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border rounded-lg group hover:border-primary-300 transition-colors">
+            <Globe className="w-4 h-4 text-slate-400 group-hover:text-primary-500" />
+            <select 
+              onChange={(e) => i18n.changeLanguage(e.target.value)}
+              value={i18n.language}
+              className="bg-transparent text-sm font-semibold text-slate-600 focus:outline-none cursor-pointer w-full"
+            >
+              <option value="en">English</option>
+              <option value="hi">हिंदी</option>
+            </select>
+          </div>
+        </div>
+
         <button 
           onClick={handleLogout}
-          className="mt-auto flex items-center gap-4 px-6 py-4 text-slate-500 font-bold hover:text-red-500 transition-colors"
+          className="flex items-center gap-4 px-6 py-4 text-slate-500 font-bold hover:text-red-500 transition-colors"
         >
-          <LogOut size={22} /> Sign Out
+          <LogOut size={22} /> {t('logout')}
         </button>
       </aside>
 
@@ -431,17 +447,17 @@ const FarmerDashboard = () => {
           <header className="flex justify-between items-center mb-10">
             <div>
               <h1 className="text-4xl font-extrabold text-slate-900 mb-2">
-                Welcome back, <span className="text-primary-600">
+                {t('welcome_back', { name: '' })} <span className="text-primary-600">
                   {userProfile ? (userProfile.business_name || userProfile.username) : 'Farmer...'}
                 </span>
               </h1>
-              <p className="text-slate-500 font-medium">Here's what's happening on your farm today.</p>
+              <p className="text-slate-500 font-medium">{t('farm_happening')}</p>
             </div>
             <button 
               onClick={openAddModal}
               className="flex items-center gap-2 px-8 py-4 bg-primary-600 text-white font-bold rounded-2xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all hover:scale-[1.02]"
             >
-              <Plus size={22} /> Add New Crop
+              <Plus size={22} /> {t('add_new_crop')}
             </button>
           </header>
         )}
@@ -458,7 +474,7 @@ const FarmerDashboard = () => {
                 <div className="bg-green-100 w-12 h-12 rounded-xl flex items-center justify-center text-green-600">
                   <IndianRupee size={24} />
                 </div>
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Monthly Revenue</span>
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">{t('monthly_revenue')}</span>
                 <span className="text-4xl font-black text-slate-900">₹{dashboardStats.total_revenue.toLocaleString('en-IN')}</span>
                 <span className="text-green-600 font-bold text-sm bg-green-50 px-2 py-1 rounded-lg self-start">Real-time performance</span>
               </div>
@@ -466,41 +482,41 @@ const FarmerDashboard = () => {
                 <div className="bg-blue-100 w-12 h-12 rounded-xl flex items-center justify-center text-blue-600">
                   <Package size={24} />
                 </div>
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Active Listings</span>
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">{t('active_listings')}</span>
                 <span className="text-4xl font-black text-slate-900">{dashboardStats.active_listings}</span>
-                <span className="text-slate-600 font-bold text-sm">Crops currently on sale</span>
+                <span className="text-slate-600 font-bold text-sm">{t('start_listing_crops')}</span>
               </div>
               <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-4">
                 <div className="bg-orange-100 w-12 h-12 rounded-xl flex items-center justify-center text-orange-600">
                   <Clock size={24} />
                 </div>
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Pending Orders</span>
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">{t('pending_orders')}</span>
                 <span className="text-4xl font-black text-slate-900">{dashboardStats.pending_orders}</span>
                 <button 
                   onClick={() => setActiveTab('orders')}
                   className="text-primary-600 font-bold text-sm hover:underline self-start"
                 >
-                  View all in queue
+                  {t('view_all_queue')}
                 </button>
               </div>
               <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-4">
                 <div className="bg-yellow-100 w-12 h-12 rounded-xl flex items-center justify-center text-yellow-600">
                   <Star size={24} />
                 </div>
-                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Farmer Rating</span>
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">{t('farmer_rating')}</span>
                 <div className="flex items-end gap-2">
                   <span className="text-4xl font-black text-slate-900">{Number(dashboardStats.avg_rating || 0).toFixed(1)}</span>
                   <span className="text-slate-500 font-bold mb-1">/5</span>
                 </div>
                 <span className="text-yellow-700 font-bold text-sm bg-yellow-50 px-2 py-1 rounded-lg self-start">
-                  {dashboardStats.total_reviews || 0} buyer reviews
+                  {t('buyer_reviews', { count: dashboardStats.total_reviews || 0 })}
                 </span>
               </div>
             </div>
 
             {/* Chart */}
             <div className="bg-white p-10 rounded-3xl shadow-sm border border-slate-100">
-              <h3 className="text-2xl font-bold text-slate-900 mb-8">Revenue Forecast</h3>
+              <h3 className="text-2xl font-bold text-slate-900 mb-8">{t('revenue_forecast')}</h3>
               <div className="h-[300px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={dashboardStats.chart_data}>
@@ -516,9 +532,9 @@ const FarmerDashboard = () => {
 
             <div className="bg-white p-10 rounded-3xl shadow-sm border border-slate-100">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-slate-900">Recent Buyer Feedback</h3>
+                <h3 className="text-2xl font-bold text-slate-900">{t('recent_feedback_title')}</h3>
                 <span className="text-xs font-black uppercase tracking-wide px-3 py-1 rounded-full bg-yellow-50 text-yellow-700">
-                  Rating and Review System
+                  {t('rating_review_system')}
                 </span>
               </div>
 
@@ -529,7 +545,7 @@ const FarmerDashboard = () => {
                       <div className="flex items-center justify-between gap-3">
                         <div>
                           <p className="font-black text-slate-900">{review.user_name}</p>
-                          <p className="text-xs text-slate-500 font-semibold">Product: {review.product_name}</p>
+                          <p className="text-xs text-slate-500 font-semibold">{t('product')}: {review.product_name}</p>
                         </div>
                         <div className="flex items-center gap-1 text-yellow-500">
                           <Star size={16} fill="currentColor" />
@@ -542,7 +558,7 @@ const FarmerDashboard = () => {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 text-slate-500 font-semibold">
-                  No buyer feedback yet. Delivered orders will start showing ratings and comments here.
+                  {t('no_feedback_yet')}
                 </div>
               )}
             </div>
@@ -570,19 +586,19 @@ const FarmerDashboard = () => {
                     </button>
                   </div>
                   <div className="absolute bottom-4 left-4">
-                    <span className="px-4 py-1.5 bg-primary-600 text-white text-xs font-black uppercase rounded-lg shadow-lg">{product.category}</span>
+                    <span className="px-4 py-1.5 bg-primary-600 text-white text-xs font-black uppercase rounded-lg shadow-lg">{t(product.category)}</span>
                   </div>
                 </div>
                 <div className="p-8 space-y-4">
                   <div className="flex justify-between items-start">
-                    <h4 className="text-xl font-black text-slate-900">{product.name}</h4>
-                    <span className="text-lg font-black text-slate-900">₹{product.price}<span className="text-sm text-slate-400 font-bold ml-1">/{product.unit}</span></span>
+                    <h4 className="text-xl font-black text-slate-900">{t(product.name, product.name)}</h4>
+                    <span className="text-lg font-black text-slate-900">₹{product.price}<span className="text-sm text-slate-400 font-bold ml-1">/{t(product.unit)}</span></span>
                   </div>
-                  <p className="text-sm text-slate-500 font-medium line-clamp-2">{product.description}</p>
+                  <p className="text-sm text-slate-500 font-medium line-clamp-2">{t(product.description, product.description)}</p>
                   <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                     <div className="flex items-center gap-2 text-primary-600">
                       <Store size={18} />
-                      <span className="text-sm font-bold">Stock: {product.stock} {product.unit}</span>
+                      <span className="text-sm font-bold">{t('quantity')}: {product.stock} {t(product.unit)}</span>
                     </div>
                     <button 
                       onClick={() => openEditModal(product)}
@@ -599,9 +615,9 @@ const FarmerDashboard = () => {
                 <div className="bg-slate-100 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto mb-6 text-slate-300">
                   <Package size={40} />
                 </div>
-                <h4 className="text-2xl font-bold text-slate-900 mb-2">No products yet</h4>
-                <p className="text-slate-500 font-medium mb-8">Start listing your crops to get discovered by buyers.</p>
-                <button onClick={openAddModal} className="px-8 py-3 bg-primary-600 text-white font-bold rounded-2xl">Add Your First Crop</button>
+                <h4 className="text-2xl font-bold text-slate-900 mb-2">{t('no_products_yet')}</h4>
+                <p className="text-slate-500 font-medium mb-8">{t('start_listing_crops')}</p>
+                <button onClick={openAddModal} className="px-8 py-3 bg-primary-600 text-white font-bold rounded-2xl">{t('add_first_crop')}</button>
               </div>
             )}
           </div>
@@ -613,11 +629,11 @@ const FarmerDashboard = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50/50">
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Order ID</th>
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Buyer</th>
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Amount</th>
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Status</th>
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Actions</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">{t('order_id')}</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">{t('buyer')}</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">{t('amount')}</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">{t('status')}</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -644,7 +660,7 @@ const FarmerDashboard = () => {
                         order.status === 'accepted' ? 'bg-blue-100 text-blue-600' :
                         'bg-green-100 text-green-600'
                       }`}>
-                        {order.status}
+                        {t(order.status)}
                       </span>
                     </td>
                     <td className="px-8 py-6">
@@ -655,7 +671,7 @@ const FarmerDashboard = () => {
                             disabled={logisticsSubmitting}
                             className="inline-flex items-center rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-black text-primary-700 transition-colors hover:bg-primary-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
                           >
-                            {logisticsSubmitting ? 'Updating...' : 'Accept Order'}
+                            {logisticsSubmitting ? t('updating') : t('accept_order')}
                           </button>
                         )}
                         {order.status === 'accepted' && (
@@ -667,7 +683,7 @@ const FarmerDashboard = () => {
                             disabled={Number(order.additional_shipping_fee || 0) > 0 && !order.additional_shipping_paid}
                             className="inline-flex items-center rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-black text-primary-700 transition-colors hover:bg-primary-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
                           >
-                            {order.pod_configured ? 'Regenerate POD' : 'Generate POD'}
+                            {order.pod_configured ? t('regenerate_pod') : t('generate_pod')}
                           </button>
                         )}
                         {(order.status === 'delivered' || order.status === 'cancelled') && (
@@ -677,7 +693,7 @@ const FarmerDashboard = () => {
                           onClick={() => setTrackingOrder(order)}
                           className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 transition-colors hover:border-primary-200 hover:bg-primary-50 hover:text-primary-700"
                         >
-                          View Details
+                          {t('view_details')}
                         </button>
                         <button
                           onClick={() => handleDownloadBill(order)}
@@ -690,11 +706,9 @@ const FarmerDashboard = () => {
                   </tr>
                 ))}
                 {incomingOrders.length === 0 && (
-                  <tr>
                     <td colSpan={5} className="px-8 py-12 text-center text-slate-500 font-semibold">
-                      No incoming orders. Delivered orders are moved to Sales History.
+                      {t('no_incoming_orders')}
                     </td>
-                  </tr>
                 )}
               </tbody>
             </table>
@@ -706,11 +720,11 @@ const FarmerDashboard = () => {
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-slate-50/50">
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Order ID</th>
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Buyer</th>
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Delivered On</th>
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Amount</th>
-                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Actions</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">{t('order_id')}</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">{t('buyer')}</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">{t('delivered_on')}</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">{t('amount')}</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">{t('actions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -753,11 +767,9 @@ const FarmerDashboard = () => {
                   </tr>
                 ))}
                 {salesHistoryOrders.length === 0 && (
-                  <tr>
                     <td colSpan={5} className="px-8 py-12 text-center text-slate-500 font-semibold">
-                      No delivered sales yet. Completed deliveries will appear here.
+                      {t('no_sales_history')}
                     </td>
-                  </tr>
                 )}
               </tbody>
             </table>
@@ -768,8 +780,8 @@ const FarmerDashboard = () => {
           <div className="space-y-6 animate-in fade-in duration-700">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-extrabold text-slate-900">Active Bids</h2>
-                <p className="text-slate-500 font-medium">Review buyer offers and accept, reject, or send counter offers.</p>
+                <h2 className="text-3xl font-extrabold text-slate-900">{t('active_bids_title')}</h2>
+                <p className="text-slate-500 font-medium">{t('active_bids_subtitle')}</p>
               </div>
             </div>
 
@@ -793,24 +805,24 @@ const FarmerDashboard = () => {
 
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-xl font-black text-slate-900">{bid.product_name || 'Product'}</h3>
+                          <h3 className="text-xl font-black text-slate-900">{t(bid.product_name || 'Product')}</h3>
                           <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
                             bid.status === 'accepted' ? 'bg-green-100 text-green-700' :
                             bid.status === 'rejected' ? 'bg-red-100 text-red-700' :
                             bid.status === 'countered' ? 'bg-blue-100 text-blue-700' :
                             'bg-orange-100 text-orange-700'
                           }`}>
-                            {bid.status}
+                            {t(bid.status)}
                           </span>
                         </div>
 
-                        <p className="text-sm text-slate-500 font-bold">Buyer: {bid.buyer_name || 'Buyer'}</p>
+                        <p className="text-sm text-slate-500 font-bold">{t('buyer_label')}: {bid.buyer_name || 'Buyer'}</p>
 
                         <div className="flex flex-wrap gap-4 text-sm font-bold">
-                          <span className="text-slate-400 line-through">Original: ₹{bid.original_price}/{bid.unit || 'kg'}</span>
-                          <span className="text-primary-700">Offered: ₹{bid.offered_price}/{bid.unit || 'kg'}</span>
+                          <span className="text-slate-400 line-through">{t('original')}: ₹{bid.original_price}/{t(bid.unit || 'kg')}</span>
+                          <span className="text-primary-700">{t('offered')}: ₹{bid.offered_price}/{t(bid.unit || 'kg')}</span>
                           {bid.farmer_counter_price && (
-                            <span className="text-blue-700">Counter: ₹{bid.farmer_counter_price}/{bid.unit || 'kg'}</span>
+                            <span className="text-blue-700">{t('counter')}: ₹{bid.farmer_counter_price}/{bid.unit || 'kg'}</span>
                           )}
                         </div>
 
@@ -829,7 +841,7 @@ const FarmerDashboard = () => {
                             onClick={() => handleNegotiationAction(bid.id, 'accept')}
                             className="px-5 py-2.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition-colors"
                           >
-                            Accept
+                            {t('accept')}
                           </button>
                           <button
                             onClick={() => {
@@ -839,18 +851,18 @@ const FarmerDashboard = () => {
                             }}
                             className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
                           >
-                            Counter
+                            {t('counter')}
                           </button>
                           <button
                             onClick={() => handleNegotiationAction(bid.id, 'reject')}
                             className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors"
                           >
-                            Reject
+                            {t('reject')}
                           </button>
                         </>
                       ) : (
                         <span className="px-4 py-2 rounded-xl bg-red-50 text-red-700 border border-red-100 text-xs font-black uppercase tracking-wide">
-                          Rejected permanently
+                          {t('rejected_permanently')}
                         </span>
                       )}
                     </div>
@@ -865,13 +877,13 @@ const FarmerDashboard = () => {
         {activeTab === 'profile' && (
           <div className="max-w-3xl animate-in fade-in duration-700">
             <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 p-10">
-              <h2 className="text-3xl font-extrabold text-slate-900 mb-2">Farmer Profile</h2>
-              <p className="text-slate-500 font-medium mb-8">Manage your account details for your farmer dashboard.</p>
+              <h2 className="text-3xl font-extrabold text-slate-900 mb-2">{t('farmer_profile')}</h2>
+              <p className="text-slate-500 font-medium mb-8">{t('farmer_profile_subtitle')}</p>
 
               <form onSubmit={handleProfileSave} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Username</label>
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('username')}</label>
                     <input
                       type="text"
                       value={userProfile?.username || ''}
@@ -880,7 +892,7 @@ const FarmerDashboard = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Role</label>
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('role')}</label>
                     <input
                       type="text"
                       value={userProfile?.role || 'farmer'}
@@ -892,7 +904,7 @@ const FarmerDashboard = () => {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Email</label>
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('email')}</label>
                     <input
                       type="email"
                       value={profileForm.email}
@@ -901,7 +913,7 @@ const FarmerDashboard = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Farm Name</label>
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('farm_name_label')}</label>
                     <input
                       type="text"
                       value={profileForm.business_name}
@@ -912,7 +924,7 @@ const FarmerDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">GSTIN</label>
+                  <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('business_verification')}</label>
                   <input
                     type="text"
                     value={profileForm.gstin}
@@ -922,7 +934,7 @@ const FarmerDashboard = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">Farm Address</label>
+                  <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('farm_address_label')}</label>
                   <textarea
                     value={profileForm.address}
                     onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
@@ -932,7 +944,7 @@ const FarmerDashboard = () => {
 
                 <div className="grid md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Latitude</label>
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('lat')}</label>
                     <input
                       type="number"
                       step="any"
@@ -942,7 +954,7 @@ const FarmerDashboard = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase text-slate-400 ml-1">Longitude</label>
+                    <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('lng')}</label>
                     <input
                       type="number"
                       step="any"
@@ -964,7 +976,7 @@ const FarmerDashboard = () => {
                   disabled={profileSaving}
                   className="px-8 py-4 bg-primary-600 text-white font-bold rounded-2xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all disabled:opacity-70"
                 >
-                  {profileSaving ? 'Saving...' : 'Save Profile'}
+                  {profileSaving ? t('saving') : t('save_profile')}
                 </button>
               </form>
             </div>
@@ -987,8 +999,8 @@ const FarmerDashboard = () => {
               <Plus className="rotate-45" size={28} />
             </button>
             
-            <h3 className="text-3xl font-black text-slate-900 mb-2">{editingProduct ? 'Edit Listing' : 'New Listing'}</h3>
-            <p className="text-slate-500 font-medium mb-8">{editingProduct ? 'Update your crop details.' : 'Add details about your crop to start selling.'}</p>
+            <h3 className="text-3xl font-black text-slate-900 mb-2">{editingProduct ? t('edit_listing') : t('new_listing')}</h3>
+            <p className="text-slate-500 font-medium mb-8">{editingProduct ? t('update_crop_details') : t('add_crop_details')}</p>
 
             {categoryError && (
               <div className="mb-6 p-4 bg-red-50 border-2 border-red-100 rounded-2xl flex items-center gap-3 animate-in slide-in-from-top-2 duration-300">
@@ -996,8 +1008,8 @@ const FarmerDashboard = () => {
                   <Plus className="rotate-45" size={20} />
                 </div>
                 <div>
-                  <p className="text-red-800 font-black text-sm uppercase tracking-tight">Category Mismatch Detected</p>
-                  <p className="text-red-600 text-xs font-bold leading-tight">The AI thinks this product doesn't belong in '{newProduct.category}'. Please check and try again.</p>
+                  <p className="text-red-800 font-black text-sm uppercase tracking-tight">{t('category_mismatch')}</p>
+                  <p className="text-red-600 text-xs font-bold leading-tight">{t('ai_category_warning', { category: t(newProduct.category) })}</p>
                 </div>
               </div>
             )}
@@ -1005,7 +1017,7 @@ const FarmerDashboard = () => {
             <form onSubmit={handleAddProduct} className="space-y-6">
               {/* Image Upload Selection */}
               <div className="space-y-3">
-                <label className="text-xs font-black uppercase text-slate-400 ml-1">Product Photo (Required)</label>
+                <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('product_photo_req')}</label>
                 <div className="flex gap-4 items-start">
                   <div className="relative group overflow-hidden w-32 h-32 bg-slate-100 rounded-[2rem] border-2 border-dashed border-slate-200 hover:border-primary-400 hover:bg-primary-50 transition-all flex flex-col items-center justify-center gap-2 cursor-pointer">
                     {imagePreview ? (
@@ -1015,7 +1027,7 @@ const FarmerDashboard = () => {
                     ) : (
                       <>
                         <Plus className="text-slate-400 group-hover:text-primary-600" size={24} />
-                        <span className="text-[10px] font-black text-slate-400 group-hover:text-primary-600 uppercase">Upload</span>
+                        <span className="text-[10px] font-black text-slate-400 group-hover:text-primary-600 uppercase">{t('upload')}</span>
                       </>
                     )}
                     <input 
@@ -1026,9 +1038,9 @@ const FarmerDashboard = () => {
                     />
                   </div>
                   <div className="flex-1 py-1">
-                    <p className="text-sm font-bold text-slate-700">Add a high-quality photo</p>
+                    <p className="text-sm font-bold text-slate-700">{t('high_quality_photo')}</p>
                     <p className="text-xs text-slate-400 font-medium leading-relaxed mt-1">
-                      Good photos build trust with buyers. Make sure the lighting is natural and the crop is clearly visible from the center.
+                      {t('photo_trust_hint')}
                     </p>
                   </div>
                 </div>
@@ -1036,35 +1048,35 @@ const FarmerDashboard = () => {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">Crop Name</label>
+                  <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('crop_name')}</label>
                   <input 
                     type="text"
                     required
                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
-                    placeholder="e.g. Organic Tomatoes"
+                    placeholder={t('crop_name_hint')}
                     value={newProduct.name}
                     onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">Category</label>
+                  <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('categories')}</label>
                   <select 
                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
                     value={newProduct.category}
                     onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
                   >
-                    <option value="vegetables">Vegetables</option>
-                    <option value="fruits">Fruits</option>
-                    <option value="grains">Grains</option>
-                    <option value="dairy">Dairy</option>
-                    <option value="organic">Organic</option>
+                    <option value="vegetables">{t('vegetables')}</option>
+                    <option value="fruits">{t('fruits')}</option>
+                    <option value="grains">{t('grains')}</option>
+                    <option value="dairy">{t('dairy')}</option>
+                    <option value="organic">{t('organic')}</option>
                   </select>
                 </div>
               </div>
 
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase text-slate-400 ml-1 flex justify-between">
-                  Price (per {newProduct.unit})
+                  {t('price_per_unit', { unit: t(newProduct.unit) })}
                   <button 
                     type="button" 
                     onClick={getAiSuggestion}
@@ -1072,7 +1084,7 @@ const FarmerDashboard = () => {
                     className="text-primary-600 font-bold hover:underline flex items-center gap-1"
                   >
                     {aiLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                    AI Suggest Price
+                    {t('ai_suggest_price')}
                   </button>
                 </label>
                 <div className="relative">
@@ -1090,7 +1102,7 @@ const FarmerDashboard = () => {
 
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">Initial Stock</label>
+                  <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('initial_stock')}</label>
                   <input 
                     type="number"
                     required
@@ -1101,38 +1113,38 @@ const FarmerDashboard = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">Unit</label>
+                  <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('unit')}</label>
                   <select 
                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
                     value={newProduct.unit}
                     onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
                   >
-                    <option value="kg">kg</option>
-                    <option value="box">box</option>
-                    <option value="bunch">bunch</option>
-                    <option value="quintal">quintal</option>
-                    <option value="dozen">dozen</option>
+                    <option value="kg">{t('kg')}</option>
+                    <option value="box">{t('box')}</option>
+                    <option value="bunch">{t('bunch')}</option>
+                    <option value="quintal">{t('quintal')}</option>
+                    <option value="dozen">{t('dozen')}</option>
                   </select>
                 </div>
               </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">Farm Location (City/District)</label>
+                  <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('farm_location_hint')}</label>
                   <input 
                     type="text"
                     required
                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
-                    placeholder="e.g. Nashik, MH"
+                    placeholder={t('location_example')}
                     value={newProduct.location}
                     onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">Description</label>
+                  <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('description')}</label>
                 <textarea 
                   className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold min-h-[120px]"
-                  placeholder="Tell buyers about your crop..."
+                  placeholder={t('description_hint')}
                   value={newProduct.description}
                   onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                 />
@@ -1148,7 +1160,7 @@ const FarmerDashboard = () => {
                 type="submit"
                 className="w-full py-5 bg-primary-600 text-white text-xl font-black rounded-[2rem] shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all active:scale-95"
               >
-                {editingProduct ? 'Save Changes' : 'Launch Listing'}
+                {editingProduct ? t('save_listing') : t('new_listing')}
               </button>
             </form>
           </div>
@@ -1199,7 +1211,7 @@ const FarmerDashboard = () => {
                   onClick={() => handleNegotiationAction(showCounterModal.id, 'counter', counterPrice, counterMessage)}
                   className="px-4 py-2.5 rounded-xl bg-primary-600 text-white font-bold hover:bg-primary-700"
                 >
-                  Send Counter
+                  {t('send_counter')}
                 </button>
               </div>
             </div>
@@ -1298,7 +1310,7 @@ const FarmerDashboard = () => {
                   ))
                 ) : (
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-slate-500 font-medium">
-                    Items detail is not available for this order.
+                    {t('no_items_detail')}
                   </div>
                 )}
               </div>

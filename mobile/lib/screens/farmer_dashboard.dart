@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
 import '../models/farmer_stats.dart';
+import '../models/review.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -13,20 +16,27 @@ class FarmerDashboard extends StatefulWidget {
 
 class _FarmerDashboardState extends State<FarmerDashboard> {
   late Future<FarmerStats> _statsFuture;
+  late Future<List<Review>> _reviewsFuture;
   final ApiService _apiService = ApiService();
 
   @override
   void initState() {
     super.initState();
+    _fetchData();
+  }
+
+  void _fetchData() {
     _statsFuture = _apiService.getFarmerStats().then((data) => FarmerStats.fromJson(data));
+    _reviewsFuture = _apiService.getReviews(farmer: true).then((data) => data.map((i) => Review.fromJson(i)).toList());
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: Text('Farmer Dashboard', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text(l10n.translate('farmer_dashboard'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0,
@@ -53,7 +63,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
           return RefreshIndicator(
             onRefresh: () async {
               setState(() {
-                _statsFuture = _apiService.getFarmerStats().then((data) => FarmerStats.fromJson(data));
+                _fetchData();
               });
             },
             child: SingleChildScrollView(
@@ -62,18 +72,25 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Welcome back, Farmer',
+                    l10n.translate('welcome'),
                     style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.blueGrey[900]),
                   ),
                   const SizedBox(height: 5),
                   Text(
-                    "Here's your performance summary",
+                    l10n.translate('performance_summary'),
                     style: GoogleFonts.outfit(fontSize: 14, color: Colors.blueGrey[500]),
                   ),
                   const SizedBox(height: 25),
-                  _buildStatCards(stats),
+                  _buildStatCards(stats, l10n),
                   const SizedBox(height: 25),
-                  _buildRevenueChart(stats.chartData),
+                  _buildRevenueChart(stats.chartData, l10n),
+                  const SizedBox(height: 40),
+                  Text(
+                    l10n.translate('recent_feedback'),
+                    style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey[900]),
+                  ),
+                  const SizedBox(height: 15),
+                  _buildRecentFeedback(l10n),
                 ],
               ),
             ),
@@ -83,22 +100,39 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
     );
   }
 
-  Widget _buildStatCards(FarmerStats stats) {
+  Widget _buildStatCards(FarmerStats stats, AppLocalizations l10n) {
     return Column(
       children: [
-        _statCard(
-          'Total Revenue',
-          '₹${stats.totalRevenue.toStringAsFixed(0)}',
-          Icons.currency_rupee,
-          Colors.green[50]!,
-          Colors.green[700]!,
+        Row(
+          children: [
+            Expanded(
+              child: _statCard(
+                l10n.translate('total_revenue'),
+                '₹${stats.totalRevenue.toStringAsFixed(0)}',
+                Icons.currency_rupee,
+                Colors.green[50]!,
+                Colors.green[700]!,
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: _statCard(
+                l10n.translate('avg_rating'),
+                '${stats.avgRating.toStringAsFixed(1)} / 5',
+                Icons.star,
+                Colors.amber[50]!,
+                Colors.amber[700]!,
+                subtitle: '${stats.totalReviews} ${l10n.translate('reviews')}',
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 15),
         Row(
           children: [
             Expanded(
               child: _statCard(
-                'Active Listings',
+                l10n.translate('active_listings'),
                 stats.activeListings.toString(),
                 Icons.inventory_2_outlined,
                 Colors.blue[50]!,
@@ -108,7 +142,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
             const SizedBox(width: 15),
             Expanded(
               child: _statCard(
-                'Pending Orders',
+                l10n.translate('pending_orders'),
                 stats.pendingOrders.toString(),
                 Icons.shopping_cart_outlined,
                 Colors.orange[50]!,
@@ -121,7 +155,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
     );
   }
 
-  Widget _statCard(String label, String value, IconData icon, Color bgColor, Color iconColor) {
+  Widget _statCard(String label, String value, IconData icon, Color bgColor, Color iconColor, {String? subtitle}) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -129,7 +163,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.blueGrey[100]!),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -143,13 +177,72 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
           const SizedBox(height: 15),
           Text(label, style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey[400], letterSpacing: 0.5)),
           const SizedBox(height: 5),
-          Text(value, style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blueGrey[900])),
+          Text(value, style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.blueGrey[900])),
+          if (subtitle != null) ...[
+            const SizedBox(height: 4),
+            Text(subtitle, style: GoogleFonts.outfit(fontSize: 10, color: Colors.blueGrey[400], fontWeight: FontWeight.bold)),
+          ]
         ],
       ),
     );
   }
 
-  Widget _buildRevenueChart(List<ChartData> data) {
+  Widget _buildRecentFeedback(AppLocalizations l10n) {
+    return FutureBuilder<List<Review>>(
+      future: _reviewsFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()));
+        }
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(30),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.blueGrey[50]!)),
+            child: Center(child: Text(l10n.translate('no_feedback'), style: GoogleFonts.outfit(color: Colors.blueGrey[300]))),
+          );
+        }
+
+        final reviews = snapshot.data!;
+        return Column(
+          children: reviews.take(5).map((review) => Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: Colors.blueGrey[50]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(child: Text(review.userName, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16))),
+                    Row(
+                      children: List.generate(5, (i) => Icon(Icons.star, size: 14, color: i < review.rating ? Colors.amber : Colors.blueGrey[50])),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text('${l10n.translate('on')} ${review.productName}', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey[400], fontWeight: FontWeight.bold)),
+                const SizedBox(height: 12),
+                Text(review.comment, style: GoogleFonts.outfit(fontSize: 14, color: Colors.blueGrey[700])),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Text(DateFormat('MMM dd, yyyy').format(review.createdAt), style: GoogleFonts.outfit(fontSize: 10, color: Colors.blueGrey[300])),
+                ),
+              ],
+            ),
+          )).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildRevenueChart(List<ChartData> data, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(25),
       decoration: BoxDecoration(
@@ -160,7 +253,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Revenue Forecast', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey[900])),
+          Text(l10n.translate('revenue_forecast'), style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey[900])),
           const SizedBox(height: 30),
           SizedBox(
             height: 250,
@@ -204,7 +297,7 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                     barWidth: 4,
                     isStrokeCapRound: true,
                     dotData: FlDotData(show: true, getDotPainter: (spot, percent, barData, index) => FlDotCirclePainter(radius: 6, color: Colors.white, strokeWidth: 3, strokeColor: const Color(0xFF16A34A))),
-                    belowBarData: BarAreaData(show: true, gradient: LinearGradient(colors: [const Color(0xFF16A34A).withValues(alpha: 0.1), const Color(0xFF16A34A).withValues(alpha: 0.0)])),
+                    belowBarData: BarAreaData(show: true, gradient: LinearGradient(colors: [const Color(0xFF16A34A).withOpacity(0.1), const Color(0xFF16A34A).withOpacity(0.0)])),
                   ),
                 ],
               ),

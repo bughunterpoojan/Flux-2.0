@@ -1,14 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/login_screen.dart';
-import 'screens/buyer_home.dart';
-import 'screens/farmer_home.dart';
-import 'services/api_service.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'models/user_profile.dart';
+import 'providers/language_provider.dart';
+import 'l10n/app_localizations.dart';
+import 'services/api_service.dart';
+import 'screens/farmer_home.dart';
+import 'screens/buyer_home_shell.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const AgriMarketApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+      ],
+      child: const AgriMarketApp(),
+    ),
+  );
 }
 
 class AgriMarketApp extends StatelessWidget {
@@ -16,15 +28,28 @@ class AgriMarketApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+
     return MaterialApp(
       title: 'AgriMarket',
       debugShowCheckedModeBanner: false,
+      locale: languageProvider.currentLocale,
+      supportedLocales: const [
+        Locale('en', ''),
+        Locale('hi', ''),
+      ],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF3e9150),
-          primary: const Color(0xFF3e9150),
-          secondary: const Color(0xFF2e753d),
+          seedColor: const Color(0xFF16A34A),
+          primary: const Color(0xFF16A34A),
+          secondary: const Color(0xFF15803D),
         ),
         textTheme: GoogleFonts.outfitTextTheme(),
       ),
@@ -57,12 +82,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
     
     if (token != null) {
       try {
-        // Add a 5-second timeout to prevent indefinite hanging
-        final profile = await ApiService().updateProfile({}).timeout(
+        final profileData = await ApiService().updateProfile({}).timeout(
           const Duration(seconds: 5),
           onTimeout: () => throw Exception('Connection timeout'),
         );
-        _role = profile['role'] ?? 'buyer';
+        final profile = UserProfile.fromJson(profileData);
+        _role = profile.role;
         _isLoggedIn = true;
       } catch (e) {
         _isLoggedIn = false;
@@ -80,10 +105,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFF16A34A))));
     }
     if (_isLoggedIn) {
-      return _role == 'farmer' ? const FarmerHome() : const BuyerHomeScreen();
+      return _role == 'farmer' ? const FarmerHome() : const BuyerHomeShell();
     }
     return const LoginScreen();
   }
