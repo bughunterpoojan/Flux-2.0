@@ -3,10 +3,11 @@ import {
   Search, Filter, ShoppingCart, User, LogOut, 
   MapPin, Star, History, Package, ChevronRight,
   TrendingDown, MessageCircle, CreditCard, Loader2,
-  CheckCircle2, AlertCircle, ArrowRight, Store, X, Plus, Trash2
+  CheckCircle2, AlertCircle, ArrowRight, Store, X, Plus, Trash2, Download
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
+import { generateOrderInvoicePdf } from '../utils/invoicePdf';
 
 const BuyerDashboard = () => {
   const [activeTab, setActiveTab] = useState('browse');
@@ -462,26 +463,7 @@ const BuyerDashboard = () => {
     }
   };
 
-  const demoBuyerBid = {
-    id: 'demo-buyer-bid-1',
-    product: null,
-    product_name: 'Premium Nashik Onions',
-    product_image: 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&q=80&w=600',
-    status: 'countered',
-    original_price: '52.00',
-    offered_price: '39.00',
-    farmer_counter_price: '44.00',
-    unit: 'kg',
-  };
-
-  const displayedNegotiations = negotiations.length > 0 ? negotiations : [demoBuyerBid];
-
   const handleBidPurchase = (neg) => {
-    if (typeof neg.id === 'string' && neg.id.startsWith('demo-buyer-bid-')) {
-      alert('This is a demo bid preview. Real bids will be purchasable once a live farmer response is available.');
-      return;
-    }
-
     const product = products.find((p) => p.id === neg.product);
     if (!product) {
       alert('Product is not available right now. Please refresh and try again.');
@@ -525,6 +507,14 @@ const BuyerDashboard = () => {
       (filter === 'all' || normalizedProductCategory === filter)
     );
   });
+
+  const handleDownloadBill = (order) => {
+    generateOrderInvoicePdf({
+      order,
+      viewerRole: 'buyer',
+      viewerProfile: userProfile,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
@@ -960,6 +950,15 @@ const BuyerDashboard = () => {
                         )}
                       </div>
                     )}
+
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => handleDownloadBill(order)}
+                        className="px-4 py-2 rounded-xl bg-slate-900 text-white font-black hover:bg-slate-800 transition-colors flex items-center gap-2"
+                      >
+                        <Download size={16} /> Download Bill PDF
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1150,13 +1149,13 @@ const BuyerDashboard = () => {
           {activeTab === 'bids' && (
             <div className="max-w-4xl mx-auto space-y-10 animate-in slide-in-from-right-4 duration-700">
               <h2 className="text-4xl font-extrabold text-slate-900">Your Negotiations</h2>
-              {negotiations.length === 0 && (
-                <div className="px-4 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-100 text-xs font-bold uppercase tracking-wide w-fit">
-                  Showing Demo Bid Preview
+              {negotiations.length === 0 ? (
+                <div className="px-6 py-10 rounded-2xl bg-white border border-slate-200 text-slate-500 font-semibold text-center">
+                  No negotiations yet. Your real bids and counters will appear here.
                 </div>
-              )}
+              ) : (
               <div className="grid gap-6">
-                {displayedNegotiations.map((neg) => (
+                {negotiations.map((neg) => (
                     <div key={neg.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex items-center justify-between">
                       <div className="flex items-center gap-6">
                         <div className="w-20 h-20 bg-slate-100 rounded-2xl overflow-hidden">
@@ -1198,6 +1197,7 @@ const BuyerDashboard = () => {
                     </div>
                   ))}
               </div>
+              )}
             </div>
           )}
 

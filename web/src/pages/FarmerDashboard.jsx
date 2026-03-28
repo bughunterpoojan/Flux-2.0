@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Package, ShoppingCart, TrendingUp, LogOut, 
   Trash2, Edit, ChevronRight, LayoutDashboard, History,
-  Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle, User, BarChart3, Star
+  Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle, User, BarChart3, Star, Download
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import FarmerProfitDecisionDashboard from './FarmerProfitDecisionDashboard';
+import { generateOrderInvoicePdf } from '../utils/invoicePdf';
 
 const FarmerDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
@@ -219,6 +220,14 @@ const FarmerDashboard = () => {
     return 'Delivered';
   };
 
+  const handleDownloadBill = (order) => {
+    generateOrderInvoicePdf({
+      order,
+      viewerRole: 'farmer',
+      viewerProfile: userProfile,
+    });
+  };
+
   const getAiSuggestion = async () => {
     if (!newProduct.name) return;
     setAiLoading(true);
@@ -335,11 +344,6 @@ const FarmerDashboard = () => {
   };
 
   const handleNegotiationAction = async (id, action, counterValue = null, messageValue = '') => {
-    if (typeof id === 'string' && id.startsWith('demo-bid-')) {
-      alert('This is a demo bid for UI preview. Real actions will work when buyer bids are available.');
-      return;
-    }
-
     try {
       const payload = action === 'counter'
         ? { counter_price: counterValue, message: messageValue || '' }
@@ -354,30 +358,6 @@ const FarmerDashboard = () => {
     }
   };
 
-  const chartData = [
-    { name: 'Mon', revenue: 4000 },
-    { name: 'Tue', revenue: 3000 },
-    { name: 'Wed', revenue: 2000 },
-    { name: 'Thu', revenue: 2780 },
-    { name: 'Fri', revenue: 1890 },
-    { name: 'Sat', revenue: 2390 },
-    { name: 'Sun', revenue: 3490 },
-  ];
-
-  const demoBid = {
-    id: 'demo-bid-1',
-    product_name: 'Premium Nashik Onions',
-    product_image: 'https://images.unsplash.com/photo-1618512496248-a07fe83aa8cb?auto=format&fit=crop&q=80&w=600',
-    buyer_name: 'Demo Buyer',
-    offered_price: '39.00',
-    original_price: '52.00',
-    unit: 'kg',
-    message: 'Need 2 tons weekly, can you offer a better wholesale rate?',
-    status: 'pending',
-    farmer_counter_price: null,
-  };
-
-  const displayedNegotiations = negotiations.length > 0 ? negotiations : [demoBid];
   const incomingOrders = orders.filter((order) => order.status !== 'delivered' && order.status !== 'cancelled');
   const salesHistoryOrders = orders.filter((order) => order.status === 'delivered');
 
@@ -467,7 +447,7 @@ const FarmerDashboard = () => {
         )}
 
         {activeTab === 'profit' && (
-          <FarmerProfitDecisionDashboard userProfile={userProfile} />
+          <FarmerProfitDecisionDashboard userProfile={userProfile} products={products} orders={orders} />
         )}
 
         {activeTab === 'overview' && (
@@ -668,36 +648,42 @@ const FarmerDashboard = () => {
                       </span>
                     </td>
                     <td className="px-8 py-6">
-                      <div className="flex items-center gap-5">
+                      <div className="flex flex-wrap items-center gap-2">
                         {order.status === 'pending' && (
                           <button
                             onClick={() => handleFarmerAcceptOrder(order)}
                             disabled={logisticsSubmitting}
-                            className="text-primary-600 font-black hover:underline disabled:text-slate-400 disabled:no-underline"
+                            className="inline-flex items-center rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-black text-primary-700 transition-colors hover:bg-primary-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
                           >
                             {logisticsSubmitting ? 'Updating...' : 'Accept Order'}
                           </button>
                         )}
                         {order.status === 'accepted' && (
-                          <span className="text-slate-500 font-black">Awaiting Buyer Logistics</span>
+                          <span className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-600">Awaiting Buyer Logistics</span>
                         )}
                         {order.status === 'shipped' && (
                           <button
                             onClick={() => handleOpenLogistics(order)}
                             disabled={Number(order.additional_shipping_fee || 0) > 0 && !order.additional_shipping_paid}
-                            className="text-primary-600 font-black hover:underline disabled:text-slate-400 disabled:no-underline"
+                            className="inline-flex items-center rounded-lg border border-primary-200 bg-primary-50 px-3 py-1.5 text-xs font-black text-primary-700 transition-colors hover:bg-primary-100 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400"
                           >
                             {order.pod_configured ? 'Regenerate POD' : 'Generate POD'}
                           </button>
                         )}
                         {(order.status === 'delivered' || order.status === 'cancelled') && (
-                          <span className="text-slate-400 font-black">Completed</span>
+                          <span className="inline-flex items-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">Completed</span>
                         )}
                         <button
                           onClick={() => setTrackingOrder(order)}
-                          className="text-slate-700 font-black hover:text-primary-600 hover:underline"
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 transition-colors hover:border-primary-200 hover:bg-primary-50 hover:text-primary-700"
                         >
                           View Details
+                        </button>
+                        <button
+                          onClick={() => handleDownloadBill(order)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-900 bg-slate-900 px-3 py-1.5 text-xs font-black text-white transition-colors hover:bg-slate-800"
+                        >
+                          Download Bill
                         </button>
                       </div>
                     </td>
@@ -749,12 +735,20 @@ const FarmerDashboard = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <button
-                        onClick={() => setTrackingOrder(order)}
-                        className="text-slate-700 font-black hover:text-primary-600 hover:underline"
-                      >
-                        View Details
-                      </button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => setTrackingOrder(order)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 transition-colors hover:border-primary-200 hover:bg-primary-50 hover:text-primary-700"
+                        >
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => handleDownloadBill(order)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-900 bg-slate-900 px-3 py-1.5 text-xs font-black text-white transition-colors hover:bg-slate-800"
+                        >
+                          Download Bill
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -777,15 +771,15 @@ const FarmerDashboard = () => {
                 <h2 className="text-3xl font-extrabold text-slate-900">Active Bids</h2>
                 <p className="text-slate-500 font-medium">Review buyer offers and accept, reject, or send counter offers.</p>
               </div>
-              {negotiations.length === 0 && (
-                <span className="px-4 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-100 text-xs font-bold uppercase tracking-wide">
-                  Showing Demo Bid
-                </span>
-              )}
             </div>
 
+            {negotiations.length === 0 ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-500 font-semibold">
+                No active bids yet. Buyer negotiations will appear here in real time.
+              </div>
+            ) : (
             <div className="grid gap-6">
-              {displayedNegotiations.map((bid) => (
+              {negotiations.map((bid) => (
                 <div key={bid.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 md:p-8">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                     <div className="flex items-center gap-5">
@@ -864,6 +858,7 @@ const FarmerDashboard = () => {
                 </div>
               ))}
             </div>
+            )}
           </div>
         )}
 
@@ -1220,12 +1215,20 @@ const FarmerDashboard = () => {
                 <h3 className="text-3xl font-black text-slate-900">Order Details & Tracking</h3>
                 <p className="text-slate-500 font-medium mt-1">Order #{trackingOrder.id.toString().padStart(4, '0')}</p>
               </div>
-              <button
-                onClick={() => setTrackingOrder(null)}
-                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
-              >
-                Close
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownloadBill(trackingOrder)}
+                  className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold hover:bg-slate-800 flex items-center gap-2"
+                >
+                  <Download size={16} /> Download Bill PDF
+                </button>
+                <button
+                  onClick={() => setTrackingOrder(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
+                >
+                  Close
+                </button>
+              </div>
             </div>
 
             <div className="grid md:grid-cols-3 gap-4 mb-8">
