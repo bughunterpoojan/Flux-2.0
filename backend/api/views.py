@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 import razorpay
 from decimal import Decimal
@@ -6,6 +7,7 @@ from rest_framework import viewsets, permissions, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Sum
 from .models import User, Product, Order, OrderItem, Negotiation, Payment, Review, NegotiationMessage
@@ -14,6 +16,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import AllowAny
 from django.db.models import Sum, Count, F
 from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
 from datetime import timedelta
 import openai
 
@@ -167,18 +170,165 @@ class OrderViewSet(viewsets.ModelViewSet):
         if user.role == 'farmer':
             return Order.objects.filter(items__product__farmer=user).distinct()
         return Order.objects.filter(buyer=user)
+
+    def _is_farmer_for_order(self, user, order):
+        return OrderItem.objects.filter(order=order, product__farmer=user).exists()
+
+    def perform_update(self, serializer):
+        order = serializer.instance
+        new_status = serializer.validated_data.get('status', order.status)
+        user = self.request.user
+
+        if new_status != order.status:
+            transition_map = {
+                'pending': 'accepted',
+                'accepted': 'shipped',
+                'shipped': 'delivered',
+            }
+            allowed_next = transition_map.get(order.status)
+            if allowed_next != new_status:
+                raise ValidationError({'status': f"Invalid transition from {order.status} to {new_status}."})
+
+            # Role ownership for each stage:
+            # pending -> accepted: farmer
+            # accepted -> shipped: buyer (starts logistics)
+            # shipped -> delivered: buyer (confirms with farmer-generated POD)
+            if order.status == 'pending' and not self._is_farmer_for_order(user, order):
+                raise ValidationError({'status': 'Only the farmer can accept this order.'})
+            if order.status in ['accepted', 'shipped'] and order.buyer_id != user.id:
+                raise ValidationError({'status': 'Only the buyer can progress this stage.'})
+
+        # Delivery completion requires farmer-generated POD verification.
+        if order.status == 'shipped' and new_status == 'delivered':
+            if (order.additional_shipping_fee or Decimal('0')) > 0 and not order.additional_shipping_paid:
+                raise ValidationError({'additional_shipping_fee': 'Please pay extra shipping fee before completing delivery.'})
+
+            pod_code = str(self.request.data.get('pod_code', '') or '').strip()
+            if not re.fullmatch(r'\d{4}', pod_code):
+                raise ValidationError({'pod_code': 'Enter valid 4-digit POD code.'})
+
+            if not order.pod_code_hash:
+                raise ValidationError({'pod_code': 'Farmer has not generated POD code yet.'})
+
+            if not check_password(pod_code, order.pod_code_hash):
+                raise ValidationError({'pod_code': 'Invalid POD code.'})
+
+            serializer.save(pod_verified_at=timezone.now())
+            return
+
+        # Buyer starts logistics: accepted -> shipped.
+        if order.status == 'accepted' and new_status == 'shipped':
+            logistics_plan = str(self.request.data.get('logistics_plan', '') or '').strip()
+            delivery_slot = str(self.request.data.get('delivery_slot', '') or '').strip()
+
+            if logistics_plan not in ['shared_cluster', 'express_direct']:
+                raise ValidationError({'logistics_plan': 'Please select a valid logistics plan.'})
+
+            if not delivery_slot:
+                raise ValidationError({'delivery_slot': 'Please select delivery slot.'})
+
+            base_delivery_fee = order.initial_delivery_fee or order.delivery_fee or Decimal('0')
+            additional_shipping_fee = Decimal('0')
+
+            if logistics_plan == 'express_direct':
+                additional_shipping_fee = max(Decimal('40'), (base_delivery_fee * Decimal('0.18')).quantize(Decimal('0.01')))
+
+            adjusted_delivery_fee = (base_delivery_fee + additional_shipping_fee).quantize(Decimal('0.01'))
+            adjusted_total_amount = (order.total_amount + additional_shipping_fee).quantize(Decimal('0.01'))
+
+            serializer.save(
+                logistics_plan=logistics_plan,
+                delivery_slot=delivery_slot,
+                additional_shipping_fee=additional_shipping_fee,
+                delivery_fee=adjusted_delivery_fee,
+                total_amount=adjusted_total_amount,
+            )
+            return
+
+        serializer.save()
+
+    @action(detail=True, methods=['post'], url_path='set-pod')
+    def set_pod(self, request, pk=None):
+        order = self.get_object()
+
+        if not self._is_farmer_for_order(request.user, order):
+            return Response({'error': 'Only the farmer can generate POD code for this order.'}, status=status.HTTP_403_FORBIDDEN)
+
+        if order.status != 'shipped':
+            return Response({'error': 'POD code can be generated only after order is shipped.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if (order.additional_shipping_fee or Decimal('0')) > 0 and not order.additional_shipping_paid:
+            return Response({'error': 'Buyer must pay extra shipping fee before POD can be generated.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        pod_code = str(request.data.get('pod_code', '') or '').strip()
+        if not re.fullmatch(r'\d{4}', pod_code):
+            return Response({'error': 'POD code must be exactly 4 digits.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        order.pod_code_hash = make_password(pod_code)
+        order.save(update_fields=['pod_code_hash', 'updated_at'])
+        return Response({'status': 'POD code generated successfully.'}, status=status.HTTP_200_OK)
     
     def perform_create(self, serializer):
-        total_amount = Decimal(self.request.data.get('total_amount', 0))
-        order = serializer.save(buyer=self.request.user, total_amount=total_amount)
-        # Create items
         items_data = self.request.data.get('items', [])
+        if not items_data:
+            raise ValidationError({'items': 'At least one item is required to place an order.'})
+
+        try:
+            delivery_fee = Decimal(str(self.request.data.get('delivery_fee', 0) or 0))
+        except Exception:
+            raise ValidationError({'delivery_fee': 'Invalid delivery fee.'})
+
+        if delivery_fee < 0:
+            raise ValidationError({'delivery_fee': 'Delivery fee cannot be negative.'})
+
+        subtotal = Decimal('0')
+        normalized_items = []
+
         for item in items_data:
+            if 'product_id' not in item or 'quantity' not in item:
+                raise ValidationError({'items': 'Each item must contain product_id and quantity.'})
+
+            try:
+                quantity = Decimal(str(item.get('quantity', 0)))
+                if quantity <= 0:
+                    raise ValidationError({'items': 'Item quantity must be greater than 0.'})
+
+                # Use client-selected price (for negotiated deals) if present, else fallback to current product price.
+                selected_price = item.get('price')
+                if selected_price is None:
+                    product = Product.objects.get(id=item['product_id'])
+                    price_at_order = Decimal(str(product.price))
+                else:
+                    price_at_order = Decimal(str(selected_price))
+            except Product.DoesNotExist:
+                raise ValidationError({'items': f"Product {item.get('product_id')} does not exist."})
+            except ValidationError:
+                raise
+            except Exception:
+                raise ValidationError({'items': 'Invalid item data.'})
+
+            subtotal += quantity * price_at_order
+            normalized_items.append({
+                'product_id': item['product_id'],
+                'quantity': quantity,
+                'price_at_order': price_at_order,
+            })
+
+        total_amount = subtotal + delivery_fee
+        order = serializer.save(
+            buyer=self.request.user,
+            delivery_fee=delivery_fee,
+            initial_delivery_fee=delivery_fee,
+            total_amount=total_amount,
+        )
+
+        # Create items
+        for item in normalized_items:
             OrderItem.objects.create(
                 order=order,
                 product_id=item['product_id'],
                 quantity=item['quantity'],
-                price_at_order=item['price']
+                price_at_order=item['price_at_order']
             )
 
 class NegotiationViewSet(viewsets.ModelViewSet):
@@ -265,83 +415,153 @@ class AILogisticsFeeView(APIView):
         
         if not items:
             return Response({"error": "Cart is empty"}, status=400)
-            
-        max_dist = 0
-        total_weight = 0
-        subtotal = 0
-        product_names = []
-        
-        for item in items:
-            product = Product.objects.get(id=item['id'])
-            dist = calculate_distance(
-                product.location_lat or 0, product.location_lng or 0,
-                buyer.location_lat or 0, buyer.location_lng or 0
-            )
-            max_dist = max(max_dist, dist)
-            qty = float(item['quantity'])
-            total_weight += qty
+
+        unit_weight_map = {
+            'kg': 1.0,
+            'box': 8.0,
+            'bunch': 0.4,
+            'quintal': 100.0,
+            'dozen': 1.8,
+        }
+        perishability_map = {
+            'fruits': 1.18,
+            'vegetables': 1.15,
+            'dairy': 1.25,
+            'organic': 1.10,
+            'grains': 1.00,
+        }
+
+        total_weight = 0.0
+        subtotal = 0.0
+        max_dist = 0.0
+        weighted_dist_sum = 0.0
+        quantity_sum = 0.0
+        max_perishability = 1.0
+        unique_farmer_ids = set()
+        used_estimated_distance = False
+
+        buyer_has_coords = buyer.location_lat is not None and buyer.location_lng is not None
+
+        for idx, item in enumerate(items):
+            try:
+                product = Product.objects.get(id=item['id'])
+            except Product.DoesNotExist:
+                return Response({"error": f"Product {item.get('id')} not found"}, status=400)
+
+            qty = float(item.get('quantity', 0) or 0)
+            if qty <= 0:
+                return Response({"error": "Each cart item must have quantity > 0"}, status=400)
+
+            unit_multiplier = unit_weight_map.get((product.unit or 'kg').lower(), 1.0)
+            item_weight = qty * unit_multiplier
+            total_weight += item_weight
             subtotal += float(product.price) * qty
-            product_names.append(product.name)
-            
-        # Determine optimal logistics type based on weight
-        # < 5kg is a Parcel, > 5kg is a dedicated/shared vehicle
-        is_parcel = total_weight <= 5
-        vehicle_type = "Shared Parcel/Courier" if is_parcel else "Small Bike" if total_weight <= 20 else "Tata Ace (Small LCV)"
-        
-        prompt = (
-            f"As a professional Indian logistics estimator, provide a FAIR transport fee. "
-            f"Order Details: Subtotal: ₹{subtotal}, Total Weight: {total_weight} units, Distance: {max_dist:.1f} km, Items: {', '.join(product_names)}. "
-            f"Logistics Type: {vehicle_type}. "
-            f"{'IMPORTANT: This is a small parcel. Use standard Indian courier/speed post rates (e.g. ₹50-100 base + ₹2-5 per km).' if is_parcel else 'Use agricultural transport rates for a dedicated small vehicle (₹10-15 per km).'}"
-            f"Respond ONLY with the final numeric value (digits). No text, no currency symbols."
-        )
-        
-        try:
-            client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-            response = client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role": "system", "content": "You are a professional logistics cost estimator for Indian farm-to-market trade. You return only numeric values."},
-                    {"role": "user", "content": prompt}
-                ]
-            )
-            fee = float(response.choices[0].message.content.strip())
-            
-            # Sanity check: 
-            # 1. Parcel cap (Small orders under 200km shouldn't cost more than ₹500-800)
-            # 2. Relative cap: Logistics shouldn't exceed 40% of subtotal for standard distances (<200km)
-            if max_dist < 200:
-                if is_parcel:
-                    fee = min(fee, max(250, max_dist * 5)) # Cap at ₹5/km for parcels
-                
-                # Global cap for small orders to prevent "shipping doubling the price"
-                if subtotal < 5000:
-                    fee = min(fee, subtotal * 0.4) # Max 40% of subtotal
-            
-            # Ensure a minimum fee of ₹150 for any distance
-            fee = max(150, round(fee, 2))
-                
-            return Response({
-                "suggested_fee": fee,
-                "distance_km": round(max_dist, 1),
-                "vehicle": vehicle_type,
-                "is_parcel": is_parcel
-            }, status=status.HTTP_200_OK)
-        except Exception as e:
-            # Fallback formula: ₹10 per km for parcels, ₹15 for vehicles
-            rate = 6 if is_parcel else 12
-            fallback_fee = round((max_dist * rate) + 150, 2)
-            return Response({
-                "suggested_fee": fallback_fee, 
-                "distance_km": round(max_dist, 1),
-                "vehicle": vehicle_type,
-                "note": "AI unavailable, using standard transport rates"
-            }, status=status.HTTP_200_OK)
+
+            perishability_factor = perishability_map.get(product.category, 1.0)
+            max_perishability = max(max_perishability, perishability_factor)
+            unique_farmer_ids.add(product.farmer_id)
+
+            product_has_coords = product.location_lat is not None and product.location_lng is not None
+            if buyer_has_coords and product_has_coords:
+                dist = calculate_distance(
+                    product.location_lat, product.location_lng,
+                    buyer.location_lat, buyer.location_lng
+                )
+            else:
+                # Fallback when coordinates are incomplete: deterministic local-market estimate.
+                used_estimated_distance = True
+                dist = 18 + (idx * 7) + (qty * 1.4)
+
+            max_dist = max(max_dist, dist)
+            weighted_dist_sum += dist * qty
+            quantity_sum += qty
+
+        avg_dist = weighted_dist_sum / max(quantity_sum, 1)
+
+        if total_weight <= 20:
+            vehicle_type = "Shared Parcel/Bike"
+            base_fee = 70
+            distance_rate = 5.2
+            min_fee = 90
+        elif total_weight <= 120:
+            vehicle_type = "Mini Truck"
+            base_fee = 180
+            distance_rate = 9.5
+            min_fee = 220
+        else:
+            vehicle_type = "Tata Ace / Small LCV"
+            base_fee = 320
+            distance_rate = 13.8
+            min_fee = 420
+
+        if avg_dist <= 30:
+            zone_factor = 1.00
+        elif avg_dist <= 80:
+            zone_factor = 1.08
+        elif avg_dist <= 150:
+            zone_factor = 1.16
+        else:
+            zone_factor = 1.28
+
+        multi_pickup_factor = 1 + (max(len(unique_farmer_ids) - 1, 0) * 0.08)
+        handling_fee = total_weight * 0.95
+        perishability_fee = subtotal * max(max_perishability - 1.0, 0) * 0.045
+        distance_component = avg_dist * distance_rate * zone_factor
+        stop_coordination_fee = max(len(unique_farmer_ids) - 1, 0) * 35
+
+        fee = (base_fee + distance_component + handling_fee + perishability_fee + stop_coordination_fee) * multi_pickup_factor
+
+        # Keep shipping realistic for buyers: protect from extreme outliers while still varying by cart.
+        cap = max(subtotal * 0.45, min_fee)
+        fee = round(min(max(fee, min_fee), cap), 2)
+
+        return Response({
+            "suggested_fee": fee,
+            "distance_km": round(max_dist, 1),
+            "vehicle": vehicle_type,
+            "is_parcel": total_weight <= 20,
+            "breakdown": {
+                "avg_distance_km": round(avg_dist, 1),
+                "total_weight": round(total_weight, 2),
+                "zone_factor": zone_factor,
+                "multi_pickup_factor": round(multi_pickup_factor, 2),
+                "perishability_factor": round(max_perishability, 2),
+            },
+            "note": "Estimated distance used for some items" if used_estimated_distance else "Location-based logistics estimate",
+        }, status=status.HTTP_200_OK)
 
 class RazorpayPaymentView(APIView):
     def post(self, request):
         order_id = request.data.get('order_id')
         order = Order.objects.get(id=order_id)
+        payment_type = request.data.get('payment_type', 'order')
+
+        if payment_type == 'extra_shipping':
+            if order.buyer_id != request.user.id:
+                return Response({"error": "Only the buyer can pay extra shipping fee."}, status=status.HTTP_403_FORBIDDEN)
+
+            if (order.additional_shipping_fee or Decimal('0')) <= 0:
+                return Response({"error": "No extra shipping fee due for this order."}, status=status.HTTP_400_BAD_REQUEST)
+
+            if order.additional_shipping_paid:
+                return Response({"error": "Extra shipping fee already paid."}, status=status.HTTP_400_BAD_REQUEST)
+
+            amount = int(order.additional_shipping_fee * 100)
+            data = {
+                "amount": amount,
+                "currency": "INR",
+                "receipt": f"extra_ship_{order.id}",
+                "payment_capture": 1
+            }
+
+            try:
+                razorpay_order = razorpay_client.order.create(data=data)
+                razorpay_order['key_id'] = os.getenv("RAZORPAY_KEY_ID")
+                razorpay_order['payment_type'] = 'extra_shipping'
+                razorpay_order['order_id_internal'] = order.id
+                return Response(razorpay_order, status=status.HTTP_200_OK)
+            except Exception as e:
+                return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         
         amount = int(order.total_amount * 100) # amount in paise
         
@@ -370,6 +590,8 @@ class RazorpayPaymentView(APIView):
         razorpay_order_id = request.data.get('razorpay_order_id')
         razorpay_payment_id = request.data.get('razorpay_payment_id')
         razorpay_signature = request.data.get('razorpay_signature')
+        payment_type = request.data.get('payment_type', 'order')
+        internal_order_id = request.data.get('order_id')
         
         params_dict = {
             'razorpay_order_id': razorpay_order_id,
@@ -379,6 +601,21 @@ class RazorpayPaymentView(APIView):
         
         try:
             razorpay_client.utility.verify_payment_signature(params_dict)
+
+            if payment_type == 'extra_shipping':
+                if not internal_order_id:
+                    return Response({"status": "Order id is required for extra shipping verification"}, status=status.HTTP_400_BAD_REQUEST)
+
+                order = Order.objects.get(id=internal_order_id)
+                if order.buyer_id != request.user.id:
+                    return Response({"status": "Unauthorized"}, status=status.HTTP_403_FORBIDDEN)
+
+                order.additional_shipping_paid = True
+                order.additional_shipping_payment_id = razorpay_payment_id
+                order.additional_shipping_signature = razorpay_signature
+                order.save(update_fields=['additional_shipping_paid', 'additional_shipping_payment_id', 'additional_shipping_signature', 'updated_at'])
+                return Response({"status": "Extra shipping payment verified"}, status=status.HTTP_200_OK)
+
             payment = Payment.objects.get(razorpay_order_id=razorpay_order_id)
             payment.razorpay_payment_id = razorpay_payment_id
             payment.razorpay_signature = razorpay_signature

@@ -26,7 +26,11 @@ const FarmerDashboard = () => {
   const [counterMessage, setCounterMessage] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
+  const [listingError, setListingError] = useState('');
   const [trackingOrder, setTrackingOrder] = useState(null);
+  const [logisticsOrder, setLogisticsOrder] = useState(null);
+  const [podOtp, setPodOtp] = useState('');
+  const [logisticsSubmitting, setLogisticsSubmitting] = useState(false);
   const [profileForm, setProfileForm] = useState({
     email: '',
     business_name: '',
@@ -55,15 +59,15 @@ const FarmerDashboard = () => {
 
   const openEditModal = (product) => {
     setEditingProduct(product);
-    setNewProduct({ 
-      ...product, 
-      location: product.location || product.address || userProfile?.address || '' 
+    setNewProduct({
+      ...product,
+      location: product.location || product.address || userProfile?.address || ''
     });
     setShowAddModal(true);
   };
 
   const [dashboardStats, setDashboardStats] = useState({ total_revenue: 0, active_listings: 0, pending_orders: 0, chart_data: [] });
-  
+
   useEffect(() => {
     fetchData();
   }, [activeTab]);
@@ -96,7 +100,7 @@ const FarmerDashboard = () => {
         api.get('farmer/stats/'),
         api.get('negotiations/')
       ]);
-      
+
       setProducts(prodRes.data);
       setOrders(orderRes.data);
       setUserProfile(profileRes.data);
@@ -140,6 +144,71 @@ const FarmerDashboard = () => {
     }
   };
 
+  const handleFarmerAcceptOrder = async (order) => {
+    if (order.status !== 'pending') return;
+    setLogisticsSubmitting(true);
+    try {
+      await api.patch(`orders/${order.id}/`, { status: 'accepted' });
+      alert('Order accepted. Buyer will now complete logistics planning from buyer panel.');
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      const apiMessage = err?.response?.data?.status || err?.response?.data?.detail || 'Unable to accept this order.';
+      alert(Array.isArray(apiMessage) ? apiMessage.join(', ') : String(apiMessage));
+    } finally {
+      setLogisticsSubmitting(false);
+    }
+  };
+
+  const handleOpenLogistics = (order) => {
+    if (order.status !== 'shipped') return;
+
+    if (Number(order.additional_shipping_fee || 0) > 0 && !order.additional_shipping_paid) {
+      alert('Buyer must pay extra shipping fee first. POD code cannot be generated yet.');
+      return;
+    }
+
+    setLogisticsOrder(order);
+    setPodOtp('');
+  };
+
+  const handleLogisticsProgress = async () => {
+    if (!logisticsOrder || logisticsOrder.status !== 'shipped') return;
+
+    if (podOtp.trim().length !== 4) {
+      alert('Please generate a 4-digit POD code.');
+      return;
+    }
+
+    setLogisticsSubmitting(true);
+    try {
+      await api.post(`orders/${logisticsOrder.id}/set-pod/`, { pod_code: podOtp.trim() });
+      alert('POD code generated. Share this 4-digit code with buyer for delivery confirmation.');
+      setLogisticsOrder(null);
+      setPodOtp('');
+      fetchData();
+    } catch (err) {
+      const apiMessage = err?.response?.data?.error || err?.response?.data?.detail || 'Unable to generate POD code. Please try again.';
+      alert(Array.isArray(apiMessage) ? apiMessage.join(', ') : String(apiMessage));
+    } finally {
+      setLogisticsSubmitting(false);
+    }
+  };
+
+  const orderStages = ['pending', 'accepted', 'shipped', 'delivered'];
+
+  const getStageIndex = (status) => {
+    const idx = orderStages.indexOf(status);
+    return idx === -1 ? 0 : idx;
+  };
+
+  const stageLabel = (stage) => {
+    if (stage === 'pending') return 'Order Placed';
+    if (stage === 'accepted') return 'Farmer Accepted';
+    if (stage === 'shipped') return 'Shipped';
+    return 'Delivered';
+  };
+
   const getAiSuggestion = async () => {
     if (!newProduct.name) return;
     setAiLoading(true);
@@ -168,6 +237,7 @@ const FarmerDashboard = () => {
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
+    setListingError('');
     if (categoryError) {
       alert("Please correct the category mismatch first.");
       return;
@@ -186,8 +256,13 @@ const FarmerDashboard = () => {
     formData.append('description', newProduct.description);
     formData.append('unit', newProduct.unit);
     formData.append('address', newProduct.location || '');
-    formData.append('location_lat', userProfile?.location_lat || '');
-    formData.append('location_lng', userProfile?.location_lng || '');
+
+    if (userProfile?.location_lat !== null && userProfile?.location_lat !== undefined && userProfile?.location_lat !== '') {
+      formData.append('location_lat', userProfile.location_lat);
+    }
+    if (userProfile?.location_lng !== null && userProfile?.location_lng !== undefined && userProfile?.location_lng !== '') {
+      formData.append('location_lng', userProfile.location_lng);
+    }
 
     if (selectedFile) {
       formData.append('image', selectedFile);
@@ -210,6 +285,16 @@ const FarmerDashboard = () => {
       setImagePreview(null);
       fetchData();
     } catch (err) {
+      const backendError = err?.response?.data;
+      if (typeof backendError === 'string') {
+        setListingError(backendError);
+      } else if (backendError && typeof backendError === 'object') {
+        const firstField = Object.keys(backendError)[0];
+        const firstMsg = Array.isArray(backendError[firstField]) ? backendError[firstField][0] : backendError[firstField];
+        setListingError(`${firstField}: ${firstMsg}`);
+      } else {
+        setListingError('Unable to launch listing. Please check all fields and try again.');
+      }
       console.error(err);
     } finally {
       setLoading(false);
@@ -237,33 +322,6 @@ const FarmerDashboard = () => {
         console.error(err);
       }
     }
-  };
-
-  const handleUpdateOrderStatus = async (order) => {
-    const statusCycle = ['pending', 'accepted', 'shipped', 'delivered'];
-    const currentIndex = statusCycle.indexOf(order.status);
-    if (order.status === 'delivered') return;
-    const nextStatus = statusCycle[currentIndex + 1];
-    try {
-      await api.patch(`orders/${order.id}/`, { status: nextStatus });
-      fetchData();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const orderStages = ['pending', 'accepted', 'shipped', 'delivered'];
-
-  const getStageIndex = (status) => {
-    const idx = orderStages.indexOf(status);
-    return idx === -1 ? 0 : idx;
-  };
-
-  const stageLabel = (stage) => {
-    if (stage === 'pending') return 'Order Placed';
-    if (stage === 'accepted') return 'Farmer Accepted';
-    if (stage === 'shipped') return 'Shipped';
-    return 'Delivered';
   };
 
   const handleNegotiationAction = async (id, action, counterValue = null, messageValue = '') => {
@@ -553,15 +611,30 @@ const FarmerDashboard = () => {
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-5">
-                        <button 
-                          onClick={() => handleUpdateOrderStatus(order)}
-                          className="text-primary-600 font-black hover:underline disabled:text-slate-400 disabled:no-underline"
-                          disabled={order.status === 'delivered' || order.status === 'cancelled'}
-                        >
-                          {order.status === 'pending' ? 'Accept Order' : 
-                           order.status === 'accepted' ? 'Mark as Shipped' :
-                           order.status === 'shipped' ? 'Mark as Delivered' : 'Completed'}
-                        </button>
+                        {order.status === 'pending' && (
+                          <button
+                            onClick={() => handleFarmerAcceptOrder(order)}
+                            disabled={logisticsSubmitting}
+                            className="text-primary-600 font-black hover:underline disabled:text-slate-400 disabled:no-underline"
+                          >
+                            {logisticsSubmitting ? 'Updating...' : 'Accept Order'}
+                          </button>
+                        )}
+                        {order.status === 'accepted' && (
+                          <span className="text-slate-500 font-black">Awaiting Buyer Logistics</span>
+                        )}
+                        {order.status === 'shipped' && (
+                          <button
+                            onClick={() => handleOpenLogistics(order)}
+                            disabled={Number(order.additional_shipping_fee || 0) > 0 && !order.additional_shipping_paid}
+                            className="text-primary-600 font-black hover:underline disabled:text-slate-400 disabled:no-underline"
+                          >
+                            {order.pod_configured ? 'Regenerate POD' : 'Generate POD'}
+                          </button>
+                        )}
+                        {(order.status === 'delivered' || order.status === 'cancelled') && (
+                          <span className="text-slate-400 font-black">Completed</span>
+                        )}
                         <button
                           onClick={() => setTrackingOrder(order)}
                           className="text-slate-700 font-black hover:text-primary-600 hover:underline"
@@ -950,6 +1023,12 @@ const FarmerDashboard = () => {
                 />
               </div>
 
+              {listingError && (
+                <div className="p-4 bg-red-50 border-2 border-red-100 rounded-2xl text-red-700 text-sm font-bold">
+                  {listingError}
+                </div>
+              )}
+
               <button 
                 type="submit"
                 className="w-full py-5 bg-primary-600 text-white text-xl font-black rounded-[2rem] shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all active:scale-95"
@@ -1100,6 +1179,93 @@ const FarmerDashboard = () => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {logisticsOrder && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
+          <div className="bg-white w-full max-w-3xl rounded-[2.2rem] p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-3xl font-black text-slate-900">Generate POD Code</h3>
+                <p className="text-slate-500 font-medium mt-1">Order #{logisticsOrder.id.toString().padStart(4, '0')} - Stage: {stageLabel(logisticsOrder.status)}</p>
+              </div>
+              <button
+                onClick={() => setLogisticsOrder(null)}
+                className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-4 mb-6">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-400 font-black">Buyer</p>
+                <p className="text-lg font-black text-slate-900 mt-1">{logisticsOrder.buyer_name}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-400 font-black">Order Stage</p>
+                <p className="text-lg font-black text-slate-900 mt-1">{stageLabel(logisticsOrder.status)}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-wide text-slate-400 font-black">POD Status</p>
+                <p className="text-lg font-black text-slate-900 mt-1">{logisticsOrder.pod_configured ? 'Configured' : 'Not Generated'}</p>
+              </div>
+            </div>
+
+            {logisticsOrder.status === 'shipped' && (
+              <div className="space-y-4 mb-6">
+                <h4 className="text-xl font-black text-slate-900">Generate 4-Digit POD Code</h4>
+                {Number(logisticsOrder.additional_shipping_fee || 0) > 0 && !logisticsOrder.additional_shipping_paid && (
+                  <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+                    <p className="text-sm font-bold text-rose-700">Blocked: Buyer must pay extra shipping fee before POD generation.</p>
+                  </div>
+                )}
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                  <p className="text-sm font-bold text-blue-700 mb-2">Create POD code and share it with buyer for delivery confirmation</p>
+                  <input
+                    type="text"
+                    maxLength={4}
+                    value={podOtp}
+                    onChange={(e) => setPodOtp(e.target.value.replace(/\D/g, ''))}
+                    className="w-full md:w-60 px-4 py-3 bg-white border border-blue-200 rounded-xl outline-none focus:border-blue-500 font-black text-lg tracking-[0.35em]"
+                    placeholder="0000"
+                  />
+                  <p className="text-xs text-blue-600 font-semibold mt-2">
+                    Buyer will enter this code in buyer panel to complete delivery.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {logisticsOrder.status !== 'shipped' && (
+              <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 mb-6">
+                <p className="text-sm font-bold text-amber-700">
+                  POD generation is available after buyer starts logistics and order reaches shipped stage.
+                </p>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setLogisticsOrder(null)}
+                className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
+              >
+                Cancel
+              </button>
+              {logisticsOrder.status === 'shipped' && (
+                <button
+                  onClick={handleLogisticsProgress}
+                  disabled={logisticsSubmitting || (Number(logisticsOrder.additional_shipping_fee || 0) > 0 && !logisticsOrder.additional_shipping_paid)}
+                  className="px-5 py-2.5 rounded-xl bg-primary-600 text-white font-bold hover:bg-primary-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                >
+                  {logisticsSubmitting
+                    ? 'Updating...'
+                    : logisticsOrder.pod_configured ? 'Update POD Code' : 'Generate POD Code'}
+                </button>
+              )}
             </div>
           </div>
         </div>

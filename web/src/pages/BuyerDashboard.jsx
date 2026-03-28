@@ -37,6 +37,12 @@ const BuyerDashboard = () => {
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
+  const [logisticsOrder, setLogisticsOrder] = useState(null);
+  const [selectedLogisticsPlan, setSelectedLogisticsPlan] = useState('');
+  const [deliverySlot, setDeliverySlot] = useState('08:00-10:00');
+  const [podCodeInput, setPodCodeInput] = useState('');
+  const [logisticsSubmitting, setLogisticsSubmitting] = useState(false);
+  const [payingExtraOrderId, setPayingExtraOrderId] = useState(null);
   const navigate = useNavigate();
 
   const showToast = (message) => {
@@ -195,14 +201,18 @@ const BuyerDashboard = () => {
   const handleCheckout = async () => {
     setCheckingOut(true);
     try {
-      const totalAmount = cartTotal;
+      const deliveryFee = Number(logisticsFee || 0);
       
       const orderRes = await api.post('orders/', {
         items: cart.map(item => ({ product_id: item.id, quantity: item.quantity, price: item.price })),
-        delivery_fee: logisticsFee,
-        total_amount: totalAmount,
+        delivery_fee: deliveryFee,
         distance_km: distanceKm
       });
+
+      const serverTotal = Number(orderRes.data?.total_amount || 0);
+      if (!Number.isFinite(serverTotal) || serverTotal <= 0) {
+        throw new Error('Invalid server total amount.');
+      }
       
       const razorpayRes = await api.post('payments/create/', { order_id: orderRes.data.id });
       
@@ -241,7 +251,137 @@ const BuyerDashboard = () => {
       rzp.open();
     } catch (err) {
       console.error(err);
+      const apiMessage = err?.response?.data?.detail
+        || err?.response?.data?.items
+        || err?.response?.data?.delivery_fee
+        || err?.response?.data?.error
+        || 'Checkout failed. Please review cart details and try again.';
+      alert(Array.isArray(apiMessage) ? apiMessage.join(', ') : String(apiMessage));
       setCheckingOut(false);
+    }
+  };
+
+  const getSmartLogisticsOptions = (order) => {
+    const distance = Number(order.distance_km) || 45;
+    const baseFee = Number(order.delivery_fee) || 160;
+    return [
+      {
+        id: 'shared_cluster',
+        title: 'Shared Cluster Delivery',
+        eta: `${Math.max(8, Math.round(distance / 7))} hrs`,
+        note: `Optimized mandi route. Budget friendly around ₹${Math.max(90, Math.round(baseFee * 0.85))}`,
+      },
+      {
+        id: 'express_direct',
+        title: 'Express Direct Dispatch',
+        eta: `${Math.max(4, Math.round(distance / 12))} hrs`,
+        note: 'Fastest option with direct line-haul priority',
+      },
+    ];
+  };
+
+  const handleOpenLogistics = (order) => {
+    setLogisticsOrder(order);
+    setSelectedLogisticsPlan('');
+    setDeliverySlot('08:00-10:00');
+    setPodCodeInput('');
+  };
+
+  const handleBuyerLogisticsProgress = async () => {
+    if (!logisticsOrder) return;
+
+    if (logisticsOrder.status === 'accepted' && !selectedLogisticsPlan) {
+      alert('Please select a logistics plan before dispatch request.');
+      return;
+    }
+
+    if (logisticsOrder.status === 'shipped' && podCodeInput.trim().length !== 4) {
+      alert('Please enter the 4-digit POD code shared by farmer.');
+      return;
+    }
+
+    setLogisticsSubmitting(true);
+    try {
+      const payload = logisticsOrder.status === 'shipped'
+        ? { status: 'delivered', pod_code: podCodeInput.trim() }
+        : { status: 'shipped', logistics_plan: selectedLogisticsPlan, delivery_slot: deliverySlot };
+
+      await api.patch(`orders/${logisticsOrder.id}/`, payload);
+
+      const msg = logisticsOrder.status === 'accepted'
+        ? `Logistics started with ${selectedLogisticsPlan.replace('_', ' ')} and slot ${deliverySlot}.`
+        : 'POD verified. Delivery completed successfully.';
+      alert(msg);
+      setLogisticsOrder(null);
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      const apiMessage = err?.response?.data?.pod_code
+        || err?.response?.data?.additional_shipping_fee
+        || err?.response?.data?.status
+        || err?.response?.data?.detail
+        || err?.response?.data?.error
+        || 'Unable to progress logistics stage.';
+      alert(Array.isArray(apiMessage) ? apiMessage.join(', ') : String(apiMessage));
+    } finally {
+      setLogisticsSubmitting(false);
+    }
+  };
+
+  const getExpectedExtraShipping = (order, planId) => {
+    if (planId !== 'express_direct') return 0;
+    const base = Number(order?.initial_delivery_fee ?? order?.delivery_fee ?? 0);
+    return Math.max(40, Number((base * 0.18).toFixed(2)));
+  };
+
+  const handlePayExtraShipping = async (order) => {
+    setPayingExtraOrderId(order.id);
+    try {
+      const razorpayRes = await api.post('payments/create/', {
+        order_id: order.id,
+        payment_type: 'extra_shipping',
+      });
+
+      const options = {
+        key: razorpayRes.data.key_id,
+        amount: razorpayRes.data.amount,
+        currency: razorpayRes.data.currency,
+        name: 'AgriMarket',
+        description: `Extra Shipping Payment - Order #${order.id}`,
+        order_id: razorpayRes.data.id,
+        handler: async function (response) {
+          try {
+            await api.put('payments/verify/', {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              payment_type: 'extra_shipping',
+              order_id: order.id,
+            });
+            alert('Extra shipping fee paid successfully. You can now complete delivery with POD.');
+            await fetchData();
+          } catch (err) {
+            console.error(err);
+            alert('Extra shipping payment verification failed. Please contact support.');
+          } finally {
+            setPayingExtraOrderId(null);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setPayingExtraOrderId(null);
+          }
+        },
+        theme: { color: '#3e9150' }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      console.error(err);
+      const apiMessage = err?.response?.data?.error || 'Unable to start extra shipping payment.';
+      alert(String(apiMessage));
+      setPayingExtraOrderId(null);
     }
   };
 
@@ -600,8 +740,9 @@ const BuyerDashboard = () => {
               <h2 className="text-4xl font-extrabold text-slate-900">Order Tracking</h2>
               <div className="space-y-6">
                 {orders.map((order) => (
-                  <div key={order.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 flex items-center justify-between shadow-sm">
-                    <div className="flex items-center gap-6">
+                  <div key={order.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm space-y-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-6">
                       <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
                         <Package size={32} />
                       </div>
@@ -609,24 +750,205 @@ const BuyerDashboard = () => {
                         <h4 className="text-xl font-black text-slate-900">Order #{order.id}</h4>
                         <p className="text-slate-500 font-bold">Placed on {new Date(order.created_at).toLocaleDateString()}</p>
                       </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className={`px-4 py-1.5 rounded-full font-black text-[10px] uppercase ${
-                        order.status === 'pending' ? 'bg-orange-100 text-orange-600' :
-                        order.status === 'shipped' ? 'bg-blue-100 text-blue-600' :
-                        'bg-green-100 text-green-600'
-                      }`}>
-                        {order.status}
-                      </span>
-                      <div className="text-right">
-                        <p className="text-lg font-black text-slate-900">₹{order.total_amount}</p>
-                        {order.delivery_fee > 0 && (
-                          <p className="text-[10px] text-slate-400 font-bold italic">Incl. ₹{order.delivery_fee} AI Shipping</p>
-                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1">
+                        <span className={`px-4 py-1.5 rounded-full font-black text-[10px] uppercase ${
+                          order.status === 'pending' ? 'bg-orange-100 text-orange-600' :
+                          order.status === 'shipped' ? 'bg-blue-100 text-blue-600' :
+                          'bg-green-100 text-green-600'
+                        }`}>
+                          {order.status}
+                        </span>
+                        <div className="text-right">
+                          <p className="text-lg font-black text-slate-900">₹{order.total_amount}</p>
+                          {order.delivery_fee > 0 && (
+                            <p className="text-[10px] text-slate-400 font-bold italic">Incl. ₹{order.delivery_fee} AI Shipping</p>
+                          )}
+                        </div>
                       </div>
                     </div>
+
+                    {order.status === 'pending' && (
+                      <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4">
+                        <p className="text-sm font-black text-amber-700">Waiting for farmer to accept order.</p>
+                      </div>
+                    )}
+
+                    {order.status === 'accepted' && (
+                      <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-black text-indigo-700">Start logistics from buyer side</p>
+                          <p className="text-xs text-indigo-600 font-semibold">Select slot and plan, then request dispatch.</p>
+                        </div>
+                        <button
+                          onClick={() => handleOpenLogistics(order)}
+                          className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-black hover:bg-indigo-700"
+                        >
+                          Plan Logistics
+                        </button>
+                      </div>
+                    )}
+
+                    {Number(order.additional_shipping_fee || 0) > 0 && (
+                      <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+                        {!order.additional_shipping_paid ? (
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-black text-rose-700">
+                                Extra Shipping Due: ₹{Number(order.additional_shipping_fee).toFixed(2)}
+                              </p>
+                              <p className="text-xs text-rose-600 font-semibold mt-1">
+                                Pay this amount first. Delivery cannot be completed until extra shipping is paid.
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handlePayExtraShipping(order)}
+                              disabled={payingExtraOrderId === order.id}
+                              className="px-4 py-2 rounded-xl bg-rose-600 text-white font-black hover:bg-rose-700 disabled:bg-rose-300"
+                            >
+                              {payingExtraOrderId === order.id ? 'Processing...' : 'Pay Now'}
+                            </button>
+                          </div>
+                        ) : (
+                          <div>
+                            <p className="text-sm font-black text-emerald-700">
+                              Extra Shipping Paid: ₹{Number(order.additional_shipping_fee).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-emerald-600 font-semibold mt-1">
+                              Extra shipping payment completed successfully.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {order.status === 'shipped' && !order.pod_verified && (
+                      <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-black text-blue-700">Confirm delivery with farmer POD code</p>
+                          <p className="text-xs text-blue-600 font-semibold">
+                            {order.pod_configured ? 'Farmer has generated POD code. Enter it to complete delivery.' : 'Waiting for farmer to generate POD code.'}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleOpenLogistics(order)}
+                          disabled={!order.pod_configured}
+                          className="px-4 py-2 rounded-xl bg-blue-600 text-white font-black hover:bg-blue-700 disabled:bg-blue-300"
+                        >
+                          Enter POD
+                        </button>
+                      </div>
+                    )}
+
+                    {order.pod_verified && (
+                      <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                        <p className="text-sm font-black text-emerald-700">POD verified. Delivery confirmed.</p>
+                      </div>
+                    )}
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {logisticsOrder && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-6">
+              <div className="bg-white w-full max-w-3xl rounded-[2.2rem] p-8 shadow-2xl max-h-[90vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-3xl font-black text-slate-900">Buyer Logistics Control</h3>
+                    <p className="text-slate-500 font-medium mt-1">Order #{logisticsOrder.id} - Stage: {logisticsOrder.status}</p>
+                  </div>
+                  <button
+                    onClick={() => setLogisticsOrder(null)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                {logisticsOrder.status === 'accepted' && (
+                  <div className="space-y-4 mb-6">
+                    <h4 className="text-xl font-black text-slate-900">Step 1: Choose Delivery Slot</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      {['08:00-10:00', '10:00-12:00', '14:00-16:00', '16:00-18:00'].map((slot) => (
+                        <button
+                          key={slot}
+                          onClick={() => setDeliverySlot(slot)}
+                          className={`px-3 py-2 rounded-lg text-xs font-black transition-colors ${deliverySlot === slot ? 'bg-indigo-600 text-white' : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'}`}
+                        >
+                          {slot}
+                        </button>
+                      ))}
+                    </div>
+
+                    <h4 className="text-xl font-black text-slate-900 mt-4">Step 2: Choose Logistics Plan</h4>
+                    <div className="grid gap-3">
+                      {getSmartLogisticsOptions(logisticsOrder).map((plan) => (
+                        <button
+                          key={plan.id}
+                          onClick={() => setSelectedLogisticsPlan(plan.id)}
+                          className={`w-full text-left rounded-2xl border p-4 transition-all ${selectedLogisticsPlan === plan.id ? 'border-indigo-500 bg-indigo-50' : 'border-slate-200 bg-white hover:border-indigo-200'}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <p className="font-black text-slate-900">{plan.title}</p>
+                            <span className="text-xs font-black px-2 py-1 rounded-lg bg-slate-100 text-slate-700">ETA {plan.eta}</span>
+                          </div>
+                          <p className="text-xs text-slate-600 font-semibold mt-1">{plan.note}</p>
+                        </button>
+                      ))}
+                    </div>
+                    {selectedLogisticsPlan === 'express_direct' && (
+                      <div className="rounded-2xl border border-rose-100 bg-rose-50 p-4">
+                        <p className="text-sm font-black text-rose-700">
+                          Extra shipping to pay: ₹{getExpectedExtraShipping(logisticsOrder, selectedLogisticsPlan).toFixed(2)}
+                        </p>
+                        <p className="text-xs text-rose-600 font-semibold mt-1">
+                          Express Direct adds premium dispatch charges and will reflect in your order shipping total.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {logisticsOrder.status === 'shipped' && (
+                  <div className="space-y-4 mb-6">
+                    <h4 className="text-xl font-black text-slate-900">Step 3: Confirm Delivery with POD</h4>
+                    <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+                      <p className="text-sm font-bold text-blue-700 mb-2">Enter 4-digit POD code generated by farmer</p>
+                      <input
+                        type="text"
+                        maxLength={4}
+                        value={podCodeInput}
+                        onChange={(e) => setPodCodeInput(e.target.value.replace(/\D/g, ''))}
+                        className="w-full md:w-60 px-4 py-3 bg-white border border-blue-200 rounded-xl outline-none focus:border-blue-500 font-black text-lg tracking-[0.35em]"
+                        placeholder="0000"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex justify-end gap-3">
+                  <button
+                    onClick={() => setLogisticsOrder(null)}
+                    className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
+                  >
+                    Cancel
+                  </button>
+                  {(logisticsOrder.status === 'accepted' || logisticsOrder.status === 'shipped') && (
+                    <button
+                      onClick={handleBuyerLogisticsProgress}
+                      disabled={logisticsSubmitting}
+                      className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 disabled:bg-slate-300 disabled:cursor-not-allowed"
+                    >
+                      {logisticsSubmitting
+                        ? 'Updating...'
+                        : logisticsOrder.status === 'accepted'
+                          ? 'Start Logistics'
+                          : 'Complete Delivery'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           )}

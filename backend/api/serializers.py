@@ -36,6 +36,7 @@ class ProductSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = '__all__'
+        read_only_fields = ('farmer',)
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
@@ -46,10 +47,33 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     buyer_name = serializers.CharField(source='buyer.username', read_only=True)
+    pod_required = serializers.SerializerMethodField()
+    pod_configured = serializers.SerializerMethodField()
+    pod_verified = serializers.SerializerMethodField()
+
+    def get_pod_required(self, obj):
+        return obj.status == 'shipped' and obj.pod_verified_at is None
+
+    def get_pod_configured(self, obj):
+        return bool(obj.pod_code_hash)
+
+    def get_pod_verified(self, obj):
+        return obj.pod_verified_at is not None
+
     class Meta:
         model = Order
         fields = '__all__'
-        read_only_fields = ('buyer',)
+        read_only_fields = (
+            'buyer',
+            'total_amount',
+            'created_at',
+            'updated_at',
+            'pod_code_hash',
+            'pod_verified_at',
+            'additional_shipping_paid',
+            'additional_shipping_payment_id',
+            'additional_shipping_signature',
+        )
 
 class NegotiationSerializer(serializers.ModelSerializer):
     buyer_name = serializers.CharField(source='buyer.username', read_only=True)
