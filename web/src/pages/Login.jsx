@@ -29,12 +29,12 @@ const Login = () => {
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);
       setAuthToken(response.data.access);
-      
+
       // Decode JWT to get role (or fetch from a profile endpoint)
       // For simplicity, let's assume we have a user profile endpoint
       const userProfile = await api.get('auth/profile/');
       localStorage.setItem('role', userProfile.data.role);
-      
+
       if (userProfile.data.role === 'farmer') navigate('/farmer');
       else navigate('/buyer');
     } catch (err) {
@@ -45,19 +45,19 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+    <div className="min-h-screen fresh-auth-bg flex items-center justify-center p-6">
       <div className="max-w-md w-full">
-        <div className="bg-white rounded-[2.5rem] p-10 shadow-2xl shadow-slate-200 border border-slate-100">
+        <div className="glass-panel rounded-[2.5rem] p-10 border border-primary-100 page-section">
           <div className="flex flex-col items-center mb-10">
             <div className="w-16 h-16 bg-primary-100 rounded-2xl flex items-center justify-center mb-4">
               <Leaf className="text-primary-600 w-10 h-10" />
             </div>
             <h2 className="text-3xl font-bold text-slate-900">{t('welcome_back_title')}</h2>
             <p className="text-slate-500 font-medium">{t('login_subtitle')}</p>
-            
+
             <div className="mt-4 flex items-center gap-2 px-3 py-1.5 bg-slate-50 border rounded-lg group hover:border-primary-300 transition-colors">
               <Globe className="w-4 h-4 text-slate-400 group-hover:text-primary-500" />
-              <select 
+              <select
                 onChange={(e) => i18n.changeLanguage(e.target.value)}
                 value={i18n.language}
                 className="bg-transparent text-sm font-semibold text-slate-600 focus:outline-none cursor-pointer"
@@ -105,7 +105,7 @@ const Login = () => {
             {error && (
               <div className="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center text-red-600">
-                  <Leaf className="w-5 h-5 rotate-180" /> 
+                  <Leaf className="w-5 h-5 rotate-180" />
                 </div>
                 <p className="text-red-600 text-sm font-bold">{error}</p>
               </div>
@@ -114,7 +114,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 bg-primary-600 text-white text-lg font-bold rounded-2xl shadow-lg shadow-primary-200 hover:bg-primary-700 transition-all hover:scale-[1.01] active:scale-95 disabled:opacity-70 disabled:scale-100 group flex items-center justify-center gap-2"
+              className="w-full py-4 btn-primary text-lg disabled:opacity-70 disabled:translate-y-0 group flex items-center justify-center gap-2"
             >
               {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : <>{t('login')} <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" /></>}
             </button>

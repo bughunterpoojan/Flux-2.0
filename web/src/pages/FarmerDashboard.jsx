@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Plus, Package, ShoppingCart, TrendingUp, LogOut, 
+import {
+  Plus, Package, ShoppingCart, TrendingUp, LogOut,
   Trash2, Edit, ChevronRight, LayoutDashboard, History,
   Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle, User, BarChart3, Star, Download, Globe
 } from 'lucide-react';
@@ -49,14 +49,14 @@ const FarmerDashboard = () => {
 
   const openAddModal = () => {
     setEditingProduct(null);
-    setNewProduct({ 
-      name: '', 
-      category: 'vegetables', 
-      price: '', 
-      stock: '', 
-      description: '', 
-      unit: 'kg', 
-      location: userProfile?.address || '' 
+    setNewProduct({
+      name: '',
+      category: 'vegetables',
+      price: '',
+      stock: '',
+      description: '',
+      unit: 'kg',
+      location: userProfile?.address || ''
     });
     setShowAddModal(true);
   };
@@ -235,13 +235,13 @@ const FarmerDashboard = () => {
     setAiLoading(true);
     setCategoryError(false);
     try {
-      const res = await api.post('price-suggestion/', { 
-        product_name: newProduct.name, 
+      const res = await api.post('price-suggestion/', {
+        product_name: newProduct.name,
         category: newProduct.category,
         unit: newProduct.unit,
         location: newProduct.location || undefined
       });
-      
+
       if (res.data.suggested_price === 'INVALID_CATEGORY') {
         setCategoryError(true);
         setNewProduct({ ...newProduct, price: '' });
@@ -364,18 +364,18 @@ const FarmerDashboard = () => {
   const salesHistoryOrders = orders.filter((order) => order.status === 'delivered');
 
   return (
-    <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
+    <div className="flex h-screen dashboard-shell overflow-hidden font-sans">
       {/* Sidebar */}
-      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col p-8 fixed h-full z-40">
+      <aside className="w-72 dashboard-sidebar flex flex-col p-8 fixed h-full z-40">
         <div className="flex items-center gap-3 mb-12">
           <div className="w-10 h-10 bg-primary-600 rounded-xl flex items-center justify-center text-white">
             <TrendingUp size={24} />
           </div>
           <span className="text-2xl font-bold text-slate-900 tracking-tight">AgriFarmer</span>
         </div>
-        
+
         <nav className="flex-1 space-y-2">
-          <button 
+          <button
             onClick={() => setActiveTab('overview')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'overview' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
@@ -387,31 +387,31 @@ const FarmerDashboard = () => {
           >
             <BarChart3 size={22} /> {t('profit_dashboard')}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('products')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'products' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
             <Package size={22} /> {t('my_crops')}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('orders')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'orders' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
             <ShoppingCart size={22} /> {t('incoming_orders')}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('bids')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'bids' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
             <MessageCircle size={22} /> {t('active_bids')}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('history')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'history' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
             <History size={22} /> {t('sales_history')}
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('profile')}
             className={`w-full flex items-center gap-4 px-6 py-4 rounded-2xl font-bold transition-all ${activeTab === 'profile' ? 'bg-primary-600 text-white shadow-xl shadow-primary-200' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
           >
@@ -422,7 +422,7 @@ const FarmerDashboard = () => {
         <div className="mb-6 px-4">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 border rounded-lg group hover:border-primary-300 transition-colors">
             <Globe className="w-4 h-4 text-slate-400 group-hover:text-primary-500" />
-            <select 
+            <select
               onChange={(e) => i18n.changeLanguage(e.target.value)}
               value={i18n.language}
               className="bg-transparent text-sm font-semibold text-slate-600 focus:outline-none cursor-pointer w-full"
@@ -433,7 +433,7 @@ const FarmerDashboard = () => {
           </div>
         </div>
 
-        <button 
+        <button
           onClick={handleLogout}
           className="flex items-center gap-4 px-6 py-4 text-slate-500 font-bold hover:text-red-500 transition-colors"
         >
@@ -442,7 +442,7 @@ const FarmerDashboard = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 ml-72 p-12 overflow-y-auto">
+      <main className="flex-1 ml-72 p-12 overflow-y-auto dashboard-main">
         {activeTab !== 'profit' && (
           <header className="flex justify-between items-center mb-10">
             <div>
@@ -453,7 +453,7 @@ const FarmerDashboard = () => {
               </h1>
               <p className="text-slate-500 font-medium">{t('farm_happening')}</p>
             </div>
-            <button 
+            <button
               onClick={openAddModal}
               className="flex items-center gap-2 px-8 py-4 bg-primary-600 text-white font-bold rounded-2xl shadow-xl shadow-primary-200 hover:bg-primary-700 transition-all hover:scale-[1.02]"
             >
@@ -492,7 +492,7 @@ const FarmerDashboard = () => {
                 </div>
                 <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">{t('pending_orders')}</span>
                 <span className="text-4xl font-black text-slate-900">{dashboardStats.pending_orders}</span>
-                <button 
+                <button
                   onClick={() => setActiveTab('orders')}
                   className="text-primary-600 font-bold text-sm hover:underline self-start"
                 >
@@ -521,10 +521,10 @@ const FarmerDashboard = () => {
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={dashboardStats.chart_data}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontWeight: 600}} dy={10} />
-                    <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontWeight: 600}} dx={-10} />
-                    <Tooltip contentStyle={{borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)'}} />
-                    <Line type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={4} dot={{r: 6, fill: '#16a34a', strokeWidth: 2, stroke: '#fff'}} activeDot={{r: 8}} />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 600 }} dy={10} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontWeight: 600 }} dx={-10} />
+                    <Tooltip contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                    <Line type="monotone" dataKey="revenue" stroke="#16a34a" strokeWidth={4} dot={{ r: 6, fill: '#16a34a', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 8 }} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -572,13 +572,13 @@ const FarmerDashboard = () => {
                 <div className="h-48 bg-slate-100 relative overflow-hidden">
                   <img src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600'} alt={product.name} className="w-full h-full object-cover" />
                   <div className="absolute top-4 right-4 flex gap-2 translate-y-2 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all">
-                    <button 
+                    <button
                       onClick={() => openEditModal(product)}
                       className="p-3 bg-white text-slate-700 rounded-xl shadow-lg hover:text-primary-600"
                     >
                       <Edit size={18} />
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleDeleteProduct(product.id)}
                       className="p-3 bg-white text-slate-700 rounded-xl shadow-lg hover:text-red-600"
                     >
@@ -600,7 +600,7 @@ const FarmerDashboard = () => {
                       <Store size={18} />
                       <span className="text-sm font-bold">{t('quantity')}: {product.stock} {t(product.unit)}</span>
                     </div>
-                    <button 
+                    <button
                       onClick={() => openEditModal(product)}
                       className="text-slate-400 hover:text-primary-600 transition-colors"
                     >
@@ -655,11 +655,10 @@ const FarmerDashboard = () => {
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <span className={`px-4 py-1.5 rounded-xl font-black text-xs uppercase ${
-                        order.status === 'pending' ? 'bg-orange-100 text-orange-600' :
-                        order.status === 'accepted' ? 'bg-blue-100 text-blue-600' :
-                        'bg-green-100 text-green-600'
-                      }`}>
+                      <span className={`px-4 py-1.5 rounded-xl font-black text-xs uppercase ${order.status === 'pending' ? 'bg-orange-100 text-orange-600' :
+                          order.status === 'accepted' ? 'bg-blue-100 text-blue-600' :
+                            'bg-green-100 text-green-600'
+                        }`}>
                         {t(order.status)}
                       </span>
                     </td>
@@ -706,9 +705,9 @@ const FarmerDashboard = () => {
                   </tr>
                 ))}
                 {incomingOrders.length === 0 && (
-                    <td colSpan={5} className="px-8 py-12 text-center text-slate-500 font-semibold">
-                      {t('no_incoming_orders')}
-                    </td>
+                  <td colSpan={5} className="px-8 py-12 text-center text-slate-500 font-semibold">
+                    {t('no_incoming_orders')}
+                  </td>
                 )}
               </tbody>
             </table>
@@ -767,9 +766,9 @@ const FarmerDashboard = () => {
                   </tr>
                 ))}
                 {salesHistoryOrders.length === 0 && (
-                    <td colSpan={5} className="px-8 py-12 text-center text-slate-500 font-semibold">
-                      {t('no_sales_history')}
-                    </td>
+                  <td colSpan={5} className="px-8 py-12 text-center text-slate-500 font-semibold">
+                    {t('no_sales_history')}
+                  </td>
                 )}
               </tbody>
             </table>
@@ -790,86 +789,85 @@ const FarmerDashboard = () => {
                 No active bids yet. Buyer negotiations will appear here in real time.
               </div>
             ) : (
-            <div className="grid gap-6">
-              {negotiations.map((bid) => (
-                <div key={bid.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 md:p-8">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                    <div className="flex items-center gap-5">
-                      <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
-                        <img
-                          src={bid.product_image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600'}
-                          alt={bid.product_name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-xl font-black text-slate-900">{t(bid.product_name || 'Product')}</h3>
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${
-                            bid.status === 'accepted' ? 'bg-green-100 text-green-700' :
-                            bid.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                            bid.status === 'countered' ? 'bg-blue-100 text-blue-700' :
-                            'bg-orange-100 text-orange-700'
-                          }`}>
-                            {t(bid.status)}
-                          </span>
+              <div className="grid gap-6">
+                {negotiations.map((bid) => (
+                  <div key={bid.id} className="bg-white rounded-[2rem] border border-slate-100 shadow-sm p-6 md:p-8">
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                      <div className="flex items-center gap-5">
+                        <div className="w-24 h-24 rounded-2xl overflow-hidden bg-slate-100 shrink-0">
+                          <img
+                            src={bid.product_image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=600'}
+                            alt={bid.product_name}
+                            className="w-full h-full object-cover"
+                          />
                         </div>
 
-                        <p className="text-sm text-slate-500 font-bold">{t('buyer_label')}: {bid.buyer_name || 'Buyer'}</p>
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-xl font-black text-slate-900">{t(bid.product_name || 'Product')}</h3>
+                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase ${bid.status === 'accepted' ? 'bg-green-100 text-green-700' :
+                                bid.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                                  bid.status === 'countered' ? 'bg-blue-100 text-blue-700' :
+                                    'bg-orange-100 text-orange-700'
+                              }`}>
+                              {t(bid.status)}
+                            </span>
+                          </div>
 
-                        <div className="flex flex-wrap gap-4 text-sm font-bold">
-                          <span className="text-slate-400 line-through">{t('original')}: ₹{bid.original_price}/{t(bid.unit || 'kg')}</span>
-                          <span className="text-primary-700">{t('offered')}: ₹{bid.offered_price}/{t(bid.unit || 'kg')}</span>
-                          {bid.farmer_counter_price && (
-                            <span className="text-blue-700">{t('counter')}: ₹{bid.farmer_counter_price}/{bid.unit || 'kg'}</span>
+                          <p className="text-sm text-slate-500 font-bold">{t('buyer_label')}: {bid.buyer_name || 'Buyer'}</p>
+
+                          <div className="flex flex-wrap gap-4 text-sm font-bold">
+                            <span className="text-slate-400 line-through">{t('original')}: ₹{bid.original_price}/{t(bid.unit || 'kg')}</span>
+                            <span className="text-primary-700">{t('offered')}: ₹{bid.offered_price}/{t(bid.unit || 'kg')}</span>
+                            {bid.farmer_counter_price && (
+                              <span className="text-blue-700">{t('counter')}: ₹{bid.farmer_counter_price}/{bid.unit || 'kg'}</span>
+                            )}
+                          </div>
+
+                          {bid.message && (
+                            <p className="text-sm text-slate-600 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
+                              {bid.message}
+                            </p>
                           )}
                         </div>
+                      </div>
 
-                        {bid.message && (
-                          <p className="text-sm text-slate-600 bg-slate-50 border border-slate-100 rounded-xl px-3 py-2">
-                            {bid.message}
-                          </p>
+                      <div className="flex flex-wrap gap-3 lg:justify-end">
+                        {bid.status !== 'rejected' ? (
+                          <>
+                            <button
+                              onClick={() => handleNegotiationAction(bid.id, 'accept')}
+                              className="px-5 py-2.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition-colors"
+                            >
+                              {t('accept')}
+                            </button>
+                            <button
+                              onClick={() => {
+                                setShowCounterModal(bid);
+                                setCounterPrice(bid.offered_price || '');
+                                setCounterMessage('');
+                              }}
+                              className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
+                            >
+                              {t('counter')}
+                            </button>
+                            <button
+                              onClick={() => handleNegotiationAction(bid.id, 'reject')}
+                              className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors"
+                            >
+                              {t('reject')}
+                            </button>
+                          </>
+                        ) : (
+                          <span className="px-4 py-2 rounded-xl bg-red-50 text-red-700 border border-red-100 text-xs font-black uppercase tracking-wide">
+                            {t('rejected_permanently')}
+                          </span>
                         )}
                       </div>
                     </div>
-
-                    <div className="flex flex-wrap gap-3 lg:justify-end">
-                      {bid.status !== 'rejected' ? (
-                        <>
-                          <button
-                            onClick={() => handleNegotiationAction(bid.id, 'accept')}
-                            className="px-5 py-2.5 rounded-xl bg-green-600 text-white font-bold hover:bg-green-700 transition-colors"
-                          >
-                            {t('accept')}
-                          </button>
-                          <button
-                            onClick={() => {
-                              setShowCounterModal(bid);
-                              setCounterPrice(bid.offered_price || '');
-                              setCounterMessage('');
-                            }}
-                            className="px-5 py-2.5 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition-colors"
-                          >
-                            {t('counter')}
-                          </button>
-                          <button
-                            onClick={() => handleNegotiationAction(bid.id, 'reject')}
-                            className="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 transition-colors"
-                          >
-                            {t('reject')}
-                          </button>
-                        </>
-                      ) : (
-                        <span className="px-4 py-2 rounded-xl bg-red-50 text-red-700 border border-red-100 text-xs font-black uppercase tracking-wide">
-                          {t('rejected_permanently')}
-                        </span>
-                      )}
-                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
             )}
           </div>
         )}
@@ -988,7 +986,7 @@ const FarmerDashboard = () => {
       {showAddModal && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 sm:p-12">
           <div className="bg-white w-full max-w-2xl rounded-[3rem] p-12 shadow-2xl relative animate-in zoom-in-95 duration-300 max-h-[90vh] overflow-y-auto">
-            <button 
+            <button
               onClick={() => {
                 setShowAddModal(false);
                 setEditingProduct(null);
@@ -998,7 +996,7 @@ const FarmerDashboard = () => {
             >
               <Plus className="rotate-45" size={28} />
             </button>
-            
+
             <h3 className="text-3xl font-black text-slate-900 mb-2">{editingProduct ? t('edit_listing') : t('new_listing')}</h3>
             <p className="text-slate-500 font-medium mb-8">{editingProduct ? t('update_crop_details') : t('add_crop_details')}</p>
 
@@ -1030,8 +1028,8 @@ const FarmerDashboard = () => {
                         <span className="text-[10px] font-black text-slate-400 group-hover:text-primary-600 uppercase">{t('upload')}</span>
                       </>
                     )}
-                    <input 
-                      type="file" 
+                    <input
+                      type="file"
                       accept="image/*"
                       onChange={handleFileChange}
                       className="absolute inset-0 opacity-0 cursor-pointer"
@@ -1049,7 +1047,7 @@ const FarmerDashboard = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('crop_name')}</label>
-                  <input 
+                  <input
                     type="text"
                     required
                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
@@ -1060,7 +1058,7 @@ const FarmerDashboard = () => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('categories')}</label>
-                  <select 
+                  <select
                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
                     value={newProduct.category}
                     onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
@@ -1077,8 +1075,8 @@ const FarmerDashboard = () => {
               <div className="space-y-2">
                 <label className="text-xs font-black uppercase text-slate-400 ml-1 flex justify-between">
                   {t('price_per_unit', { unit: t(newProduct.unit) })}
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     onClick={getAiSuggestion}
                     disabled={aiLoading}
                     className="text-primary-600 font-bold hover:underline flex items-center gap-1"
@@ -1089,7 +1087,7 @@ const FarmerDashboard = () => {
                 </label>
                 <div className="relative">
                   <div className="absolute left-6 top-4 font-bold text-slate-400">₹</div>
-                  <input 
+                  <input
                     type="number"
                     required
                     className="w-full pl-10 pr-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
@@ -1103,7 +1101,7 @@ const FarmerDashboard = () => {
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('initial_stock')}</label>
-                  <input 
+                  <input
                     type="number"
                     required
                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
@@ -1114,7 +1112,7 @@ const FarmerDashboard = () => {
                 </div>
                 <div className="space-y-2">
                   <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('unit')}</label>
-                  <select 
+                  <select
                     className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
                     value={newProduct.unit}
                     onChange={(e) => setNewProduct({ ...newProduct, unit: e.target.value })}
@@ -1128,21 +1126,21 @@ const FarmerDashboard = () => {
                 </div>
               </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('farm_location_hint')}</label>
-                  <input 
-                    type="text"
-                    required
-                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
-                    placeholder={t('location_example')}
-                    value={newProduct.location}
-                    onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('farm_location_hint')}</label>
+                <input
+                  type="text"
+                  required
+                  className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold"
+                  placeholder={t('location_example')}
+                  value={newProduct.location}
+                  onChange={(e) => setNewProduct({ ...newProduct, location: e.target.value })}
+                />
+              </div>
 
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('description')}</label>
-                <textarea 
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase text-slate-400 ml-1">{t('description')}</label>
+                <textarea
                   className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-primary-500 font-bold min-h-[120px]"
                   placeholder={t('description_hint')}
                   value={newProduct.description}
@@ -1156,7 +1154,7 @@ const FarmerDashboard = () => {
                 </div>
               )}
 
-              <button 
+              <button
                 type="submit"
                 className="w-full py-5 bg-primary-600 text-white text-xl font-black rounded-[2rem] shadow-2xl shadow-primary-200 hover:bg-primary-700 transition-all active:scale-95"
               >
@@ -1270,11 +1268,10 @@ const FarmerDashboard = () => {
                   return (
                     <div
                       key={stage}
-                      className={`rounded-2xl border p-4 ${
-                        isCompleted
+                      className={`rounded-2xl border p-4 ${isCompleted
                           ? 'bg-emerald-50 border-emerald-200'
                           : 'bg-slate-50 border-slate-200'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2 mb-2">
                         {isCompleted ? (

@@ -20,7 +20,7 @@ const ProtectedRoute = ({ children, role }) => {
 function App() {
   return (
     <Router>
-      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+      <div className="app-shell font-sans">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />

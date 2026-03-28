@@ -3,13 +3,20 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Outfit', 'Segoe UI', sans-serif;
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0f172a;
+  --fresh-bg: #f8faf7;
+  --fresh-surface: #ffffff;
+  --fresh-surface-soft: #f2f7ef;
+  --fresh-border: #dde8d9;
+  --fresh-text: #1f2d23;
+  --fresh-muted: #5c6c61;
+  --fresh-primary: #2f7d32;
+  --fresh-primary-deep: #145a24;
+  --fresh-primary-soft: #deecd8;
+  --fresh-accent: #efc447;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -19,24 +26,22 @@
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  background: radial-gradient(circle at 10% 0%, #edf5e8 0, transparent 32%),
+    radial-gradient(circle at 95% 8%, #f4ebc7 0, transparent 24%),
+    var(--fresh-bg);
+  color: var(--fresh-text);
   min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
 }
 
 #root {
   width: 100%;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+* {
+  box-sizing: border-box;
 }
