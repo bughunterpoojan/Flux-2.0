@@ -52,7 +52,11 @@ class ApiService {
     }
   }
 
-  Future<void> createOrder(List<Map<String, dynamic>> items, double total) async {
+  Future<Map<String, dynamic>> createOrder({
+    required List<Map<String, dynamic>> items,
+    required double deliveryFee,
+    required double distanceKm,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access');
     final response = await http.post(
@@ -63,11 +67,106 @@ class ApiService {
       },
       body: json.encode({
         'items': items,
-        'total_amount': total,
+        'delivery_fee': deliveryFee,
+        'distance_km': distanceKm,
       }),
     );
-    if (response.statusCode != 201) {
-      throw Exception('Failed to create order');
+    if (response.statusCode == 201) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to create order: ${response.body}');
+    }
+  }
+
+  Future<void> updateOrderStatus(int id, String status, {String? logisticsPlan, String? deliverySlot, String? podCode}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access');
+    final Map<String, dynamic> body = {'status': status};
+    if (logisticsPlan != null) body['logistics_plan'] = logisticsPlan;
+    if (deliverySlot != null) body['delivery_slot'] = deliverySlot;
+    if (podCode != null) body['pod_code'] = podCode;
+
+    final response = await http.patch(
+      Uri.parse('${baseUrl}orders/$id/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(body),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update order: ${response.body}');
+    }
+  }
+
+  Future<void> setPodCode(int id, String podCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access');
+    final response = await http.post(
+      Uri.parse('${baseUrl}orders/$id/set-pod/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'pod_code': podCode}),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Failed to set POD: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> createPaymentTransaction(int orderId, {String? paymentType}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access');
+    final Map<String, dynamic> body = {'order_id': orderId};
+    if (paymentType != null) body['payment_type'] = paymentType;
+
+    final response = await http.post(
+      Uri.parse('${baseUrl}payments/create/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(body),
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to create payment: ${response.body}');
+    }
+  }
+
+  Future<void> verifyPaymentTransaction(Map<String, dynamic> data) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access');
+    final response = await http.put(
+      Uri.parse('${baseUrl}payments/verify/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode(data),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Payment verification failed: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> getLogisticsQuote(List<Map<String, dynamic>> items) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access');
+    final response = await http.post(
+      Uri.parse('${baseUrl}logistics/quote/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({'items': items}),
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to get logistics quote');
     }
   }
 
@@ -118,22 +217,6 @@ class ApiService {
     var response = await request.send();
     if (response.statusCode != 201) {
       throw Exception('Failed to add product');
-    }
-  }
-
-  Future<void> updateOrderStatus(int orderId, String status) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('access');
-    final response = await http.patch(
-      Uri.parse('${baseUrl}orders/$orderId/'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: json.encode({'status': status}),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Failed to update order status');
     }
   }
 

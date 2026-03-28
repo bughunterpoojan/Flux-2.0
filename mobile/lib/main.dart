@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/login_screen.dart';
-import 'screens/buyer_home.dart';
+import 'screens/buyer_home_shell.dart';
 import 'screens/farmer_home.dart';
 import 'services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'models/user_profile.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,9 +23,9 @@ class AgriMarketApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF3e9150),
-          primary: const Color(0xFF3e9150),
-          secondary: const Color(0xFF2e753d),
+          seedColor: const Color(0xFF16A34A),
+          primary: const Color(0xFF16A34A),
+          secondary: const Color(0xFF15803D),
         ),
         textTheme: GoogleFonts.outfitTextTheme(),
       ),
@@ -57,12 +58,12 @@ class _AuthWrapperState extends State<AuthWrapper> {
     
     if (token != null) {
       try {
-        // Add a 5-second timeout to prevent indefinite hanging
-        final profile = await ApiService().updateProfile({}).timeout(
+        final profileData = await ApiService().updateProfile({}).timeout(
           const Duration(seconds: 5),
           onTimeout: () => throw Exception('Connection timeout'),
         );
-        _role = profile['role'] ?? 'buyer';
+        final profile = UserProfile.fromJson(profileData);
+        _role = profile.role;
         _isLoggedIn = true;
       } catch (e) {
         _isLoggedIn = false;
@@ -80,10 +81,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: Center(child: CircularProgressIndicator(color: Color(0xFF16A34A))));
     }
     if (_isLoggedIn) {
-      return _role == 'farmer' ? const FarmerHome() : const BuyerHomeScreen();
+      return _role == 'farmer' ? const FarmerHome() : const BuyerHomeShell();
     }
     return const LoginScreen();
   }

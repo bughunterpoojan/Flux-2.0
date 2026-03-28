@@ -157,17 +157,78 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
                 ],
               ),
               if (status != 'delivered' && status != 'cancelled')
-                ElevatedButton(
-                  onPressed: () => _updateStatus(id, status),
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
-                  child: Text(
-                    status == 'pending' ? 'Accept Order' : 
-                    status == 'accepted' ? 'Mark Shipped' : 
-                    status == 'shipped' ? 'Mark Delivered' : 'Done',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
+                Column(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => _updateStatus(id, status),
+                      style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF16A34A), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12)),
+                      child: Text(
+                        status == 'pending' ? 'Accept Order' : 
+                        status == 'accepted' ? 'Mark Shipped' : 'Done',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ),
+                    if (status == 'shipped')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0),
+                        child: TextButton.icon(
+                          onPressed: () => _showGeneratePodDialog(id),
+                          icon: const Icon(Icons.vpn_key_outlined, size: 16),
+                          label: const Text('Generate POD'),
+                          style: TextButton.styleFrom(foregroundColor: Colors.blueGrey),
+                        ),
+                      ),
+                  ],
                 ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showGeneratePodDialog(int orderId) async {
+    final TextEditingController podController = TextEditingController();
+    await showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Generate POD Code'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Create a 4-digit code to share with the buyer upon delivery.'),
+            const SizedBox(height: 20),
+            TextField(
+              controller: podController,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 8),
+              decoration: InputDecoration(
+                hintText: '1234',
+                counterText: '',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (podController.text.length != 4) return;
+              try {
+                await _apiService.setPodCode(orderId, podController.text);
+                if (!mounted) return;
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('POD code generated successfully!')));
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+              }
+            },
+            child: const Text('Save'),
           ),
         ],
       ),
