@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/login_screen.dart';
 import 'screens/buyer_home.dart';
+import 'screens/farmer_home.dart';
+import 'services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(const AgriMarketApp());
 }
 
@@ -40,6 +43,7 @@ class AuthWrapper extends StatefulWidget {
 class _AuthWrapperState extends State<AuthWrapper> {
   bool _isLoading = true;
   bool _isLoggedIn = false;
+  String _role = 'buyer';
 
   @override
   void initState() {
@@ -50,8 +54,25 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Future<void> _checkAuth() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access');
+    
+    if (token != null) {
+      try {
+        // Add a 5-second timeout to prevent indefinite hanging
+        final profile = await ApiService().updateProfile({}).timeout(
+          const Duration(seconds: 5),
+          onTimeout: () => throw Exception('Connection timeout'),
+        );
+        _role = profile['role'] ?? 'buyer';
+        _isLoggedIn = true;
+      } catch (e) {
+        _isLoggedIn = false;
+        debugPrint('Auth check failed: $e');
+      }
+    } else {
+      _isLoggedIn = false;
+    }
+
     setState(() {
-      _isLoggedIn = token != null;
       _isLoading = false;
     });
   }
@@ -61,6 +82,9 @@ class _AuthWrapperState extends State<AuthWrapper> {
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    return _isLoggedIn ? const BuyerHomeScreen() : const LoginScreen();
+    if (_isLoggedIn) {
+      return _role == 'farmer' ? const FarmerHome() : const BuyerHomeScreen();
+    }
+    return const LoginScreen();
   }
 }
