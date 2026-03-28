@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import 'buyer_home.dart';
+import 'farmer_home.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -23,11 +24,23 @@ class _LoginScreenState extends State<LoginScreen> {
         _usernameController.text,
         _passwordController.text,
       );
+      
+      // Fetch profile to get role
+      final profile = await _apiService.updateProfile({}); // Empty patch to get current data
+      final role = profile['role'];
+
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const BuyerHomeScreen()),
-        );
+        if (role == 'farmer') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const FarmerHome()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const BuyerHomeScreen()),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -53,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 32),
               CircleAvatar(
                 radius: 32,
-                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
                 child: const Icon(Icons.eco, size: 32, color: Color(0xFF3e9150)),
               ),
               const SizedBox(height: 32),
@@ -92,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(24),
                     ),
                     elevation: 8,
-                    shadowColor: const Color(0xFF3e9150).withOpacity(0.3),
+                    shadowColor: const Color(0xFF3e9150).withValues(alpha: 0.3),
                   ),
                   child: _isLoading 
                     ? const CircularProgressIndicator(color: Colors.white)

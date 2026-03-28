@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
-import 'login_screen.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class BuyerHomeScreen extends StatefulWidget {
   const BuyerHomeScreen({super.key});
@@ -34,16 +32,6 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
     }
   }
 
-  Future<void> _handleLogout() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,15 +42,15 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
           'AgriMarket',
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
-        actions: [
-          IconButton(
-            onPressed: _handleLogout,
-            icon: const Icon(Icons.logout, color: Colors.grey),
-          ),
-          const SizedBox(width: 8),
-        ],
         centerTitle: false,
         elevation: 0,
+        actions: [
+          IconButton(
+            onPressed: () => ApiService.logout(context),
+            icon: const Icon(Icons.logout, color: Colors.blueGrey),
+          ),
+          const SizedBox(width: 10),
+        ],
         backgroundColor: Colors.white,
       ),
       body: _isLoading 
@@ -125,7 +113,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -151,7 +139,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
