@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     RegisterView, ProfileView, AppyFlowGSTINView, OpenAIPriceSuggestionView,
-    FarmerStatsView, AILogisticsFeeView, ProductViewSet, OrderViewSet, NegotiationViewSet,
+    FarmerStatsView, FarmerProfitPlanningView, AILogisticsFeeView, ProductViewSet, OrderViewSet, NegotiationViewSet,
     ReviewViewSet,
     NegotiationMessageViewSet, RazorpayPaymentView
 )
@@ -25,6 +25,7 @@ urlpatterns = [
     path('payments/create/', RazorpayPaymentView.as_view(), name='razorpay_create'),
     path('payments/verify/', RazorpayPaymentView.as_view(), name='razorpay_verify'),
     path('farmer/stats/', FarmerStatsView.as_view(), name='farmer_stats'),
+    path('farmer/profit-planning/', FarmerProfitPlanningView.as_view(), name='farmer_profit_planning'),
     path('logistics/quote/', AILogisticsFeeView.as_view(), name='logistics_quote'),
     path('', include(router.urls)),
 ]

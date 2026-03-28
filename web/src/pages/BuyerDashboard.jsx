@@ -3,7 +3,7 @@ import {
   Search, Filter, ShoppingCart, User, LogOut,
   MapPin, Star, History, Package, ChevronRight,
   TrendingDown, MessageCircle, CreditCard, Loader2,
-  CheckCircle2, AlertCircle, ArrowRight, Store, X, Plus, Trash2, Download, Globe
+  CheckCircle2, AlertCircle, ArrowRight, Store, X, Plus, Trash2, Download, Globe, Mic
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -52,6 +52,7 @@ const BuyerDashboard = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const navigate = useNavigate();
 
   const showToast = (message) => {
@@ -126,6 +127,31 @@ const BuyerDashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const startVoiceRecognition = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Your browser does not support voice search. Please use Chrome/Edge.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = i18n.language === 'hi' ? 'hi-IN' : 'en-IN';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      setSearch(transcript);
+      setIsListening(false);
+    };
+
+    recognition.start();
   };
 
   const fetchLogisticsQuote = async () => {
@@ -535,10 +561,17 @@ const BuyerDashboard = () => {
             <input
               type="text"
               placeholder={t('search_hint')}
-              className="w-full pl-16 pr-6 py-4 bg-slate-100 border-none rounded-2xl outline-none focus:bg-white focus:ring-2 ring-primary-500/10 transition-all font-semibold"
+              className="w-full pl-16 pr-16 py-4 bg-slate-100 border-none rounded-2xl outline-none focus:bg-white focus:ring-2 ring-primary-500/10 transition-all font-semibold"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+            <button
+              onClick={startVoiceRecognition}
+              className={`absolute right-6 top-4 p-1.5 rounded-lg transition-all ${isListening ? 'bg-red-100 text-red-600 animate-pulse' : 'text-slate-400 hover:bg-slate-50 hover:text-primary-600'}`}
+              title="Voice Search"
+            >
+              <Mic size={20} />
+            </button>
           </div>
         </div>
 

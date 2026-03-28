@@ -55,21 +55,85 @@ class AppyFlowGSTINView(APIView):
             return Response({"error": "GSTIN is required"}, status=status.HTTP_400_BAD_REQUEST)
         
         api_key = os.getenv("APPYFLOW_API_KEY")
-        url = f"https://api.appyflow.in/v1/gst/{gstin}?key={api_key}"
+        # Corrected URL for the actual AppyFlow verifyGST API (POST request)
+        url = "https://appyflow.in/api/verifyGST"
         
         try:
-            # Mocking or calling the real API
-            # For now, a mock response since we don't have a real key yet
-            # In production, use: response = requests.get(url)
-            # data = response.json()
-            mock_data = {
-                "taxpayer_name": "Fresh Farms Pvt Ltd",
-                "registered_address": "123, Green Valley, Nashik, MH",
-                "status": "Active"
+            # Body parameters required exactly as per documentation: gstNo and key_secret
+            payload = {
+                "gstNo": gstin,
+                "key_secret": api_key
             }
-            return Response(mock_data, status=status.HTTP_200_OK)
+            
+            response = requests.post(url, json=payload, timeout=15)
+
+            if response.status_code != 200:
+                return Response({
+                    "error": f"AppyFlow API returned {response.status_code}",
+                    "details": response.text[:200]
+                }, status=status.HTTP_400_BAD_REQUEST)
+            
+            try:
+                data = response.json()
+            except ValueError:
+                return Response({
+                    "error": "External API returned an invalid response format (not JSON).",
+                    "details": response.text[:200] if response.text else "Empty response"
+                }, status=status.HTTP_502_BAD_GATEWAY)
+            
+            # AppyFlow API usually returns a main object with details
+            # If successful, it might contain tax_payer_details or taxpayerInfo
+            details = data.get('taxpayerInfo', data.get('tax_payer_details', data))
+            if not isinstance(details, dict):
+                details = data
+                
+            # Mapping Name (Legal Name > Trade Name > AppyFlow Custom Names)
+            name = (
+                details.get('lgnm') or 
+                details.get('tradnm') or 
+                details.get('tradeNam') or 
+                details.get('taxpayer_name') or 
+                details.get('legal_name') or 
+                details.get('trade_name') or 
+                details.get('tradeName') or 
+                "Not Found"
+            )
+            
+            # Mapping Address (Joining raw GST fields if present)
+            raw_addr = details.get('pradr', {}).get('addr', {})
+            if isinstance(raw_addr, dict) and raw_addr:
+                parts = [
+                    raw_addr.get('bno'),
+                    raw_addr.get('bnm'),
+                    raw_addr.get('st'),
+                    raw_addr.get('loc'),
+                    raw_addr.get('dst'),
+                    raw_addr.get('stcd'),
+                    raw_addr.get('pncd')
+                ]
+                # Filter out None and join
+                address = ", ".join([str(p) for p in parts if p])
+            else:
+                address = (
+                    details.get('registered_address') or 
+                    details.get('principal_place_of_business_address') or 
+                    details.get('address') or 
+                    "Address Not Found"
+                )
+                
+            mapped_data = {
+                "taxpayer_name": name,
+                "registered_address": address,
+                "status": details.get('status', 'Unknown'),
+                "raw_data": data
+            }
+            
+            return Response(mapped_data, status=status.HTTP_200_OK)
+            
+        except requests.exceptions.ConnectionError:
+            return Response({"error": "Could not connect to AppyFlow. Please ensure the API is reachable."}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": f"GSTIN verification failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class FarmerStatsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -119,6 +183,77 @@ class FarmerStatsView(APIView):
             "avg_rating": round(float(rating_data['avg_rating'] or 0), 2),
             "total_reviews": int(rating_data['total_reviews'] or 0),
             "chart_data": chart_data
+        })
+
+class FarmerProfitPlanningView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    def get(self, request):
+        user = request.user
+        # We want to show profit = (price_at_order - cost_per_unit) * quantity
+        # for all products where farmer=user and order__status in ['accepted', 'shipped', 'delivered']
+        
+        crop_profits = OrderItem.objects.filter(
+            product__farmer=user,
+            order__status__in=['accepted', 'shipped', 'delivered']
+        ).values('product__name').annotate(
+            total_revenue=Sum(F('quantity') * F('price_at_order'), output_field=models.DecimalField()),
+            total_cost=Sum(F('quantity') * F('product__cost_per_unit'), output_field=models.DecimalField()),
+        )
+        
+        formatted_data = []
+        best_crop = "N/A"
+        max_profit = -1
+        total_overall_profit = 0
+        total_overall_revenue = 0
+        total_orders = Order.objects.filter(items__product__farmer=user, status__in=['accepted', 'shipped', 'delivered']).distinct().count()
+        
+        for item in crop_profits:
+            revenue = float(item['total_revenue'] or 0)
+            cost = float(item['total_cost'] or 0)
+            profit = revenue - cost
+            crop_name = item['product__name']
+            
+            total_overall_profit += profit
+            total_overall_revenue += revenue
+            
+            formatted_data.append({
+                "crop": crop_name,
+                "cost": cost,
+                "sellingPrice": revenue,
+                "profit": profit
+            })
+            
+            if profit > max_profit:
+                max_profit = profit
+                best_crop = crop_name
+        
+        # Price Trends (Last 6 months)
+        from django.db.models.functions import TruncMonth
+        trends = OrderItem.objects.filter(
+            product__farmer=user,
+            order__status__in=['accepted', 'shipped', 'delivered']
+        ).annotate(month=TruncMonth('order__created_at')).values('month').annotate(
+            avg_price=Avg('price_at_order')
+        ).order_by('month')
+        
+        price_trends = []
+        for t in trends:
+            m = t['month']
+            if m:
+                price_trends.append({
+                    "month": m.strftime('%b'),
+                    "price": float(t['avg_price'] or 0)
+                })
+        
+        return Response({
+            "crop_data": formatted_data,
+            "summary_metrics": {
+                "total_revenue": total_overall_revenue,
+                "total_profit": total_overall_profit,
+                "total_orders": total_orders,
+                "best_crop": best_crop
+            },
+            "price_trends": price_trends
         })
 
 class ReviewViewSet(viewsets.ModelViewSet):

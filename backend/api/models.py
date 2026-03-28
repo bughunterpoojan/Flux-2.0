@@ -30,6 +30,7 @@ class Product(models.Model):
     name = models.CharField(max_length=255)
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
     price = models.DecimalField(max_digits=10, decimal_places=2)  # Base price
+    cost_per_unit = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     stock = models.FloatField()  # e.g., in kg
     unit = models.CharField(max_length=20, default='kg')
     description = models.TextField()

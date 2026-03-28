@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../models/negotiation.dart';
+import 'chat_screen.dart';
 
 class BuyerBidsScreen extends StatefulWidget {
   const BuyerBidsScreen({super.key});
@@ -93,9 +94,36 @@ class _BuyerBidsScreenState extends State<BuyerBidsScreen> {
               ],
             ],
           ),
+          Padding(
+            padding: const EdgeInsets.only(top: 15),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatScreen(
+                        negotiationId: bid.id,
+                        otherUserName: bid.farmerName ?? 'Farmer',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.chat_outlined, size: 18),
+                label: const Text('Chat with Farmer', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF16A34A),
+                  side: const BorderSide(color: Color(0xFF16A34A)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ),
           if (bid.status == 'countered' || bid.status == 'accepted')
              Padding(
-               padding: const EdgeInsets.only(top: 20),
+               padding: const EdgeInsets.only(top: 10),
                child: SizedBox(
                  width: double.infinity,
                  child: ElevatedButton(

@@ -45,6 +45,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       showDialog(context: context, barrierDismissible: false, builder: (c) => const Center(child: CircularProgressIndicator()));
       
@@ -58,21 +59,23 @@ class _ExploreScreenState extends State<ExploreScreen> {
       if (!mounted) return;
       Navigator.pop(context); // Close loading
       
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Payment Successful! Order placed.')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.paymentSuccess)));
       if (_lastProduct != null) widget.onAddToCart(_lastProduct!);
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context); // Close loading
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Verification Failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.verificationFailed}$e')));
     }
   }
 
   void _handlePaymentError(PaymentFailureResponse response) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Payment Failed [${response.code}]: ${response.message}')));
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.paymentFailed} [${response.code}]: ${response.message}')));
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('External Wallet: ${response.walletName}')));
+    final l10n = AppLocalizations.of(context)!;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.externalWallet}${response.walletName}')));
   }
 
   final List<String> _categories = ['all', 'vegetables', 'fruits', 'grains', 'dairy', 'organic'];
@@ -464,6 +467,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Future<void> _handlePlaceOrder(Product p, double qty, double shipping, double dist) async {
+    final l10n = AppLocalizations.of(context)!;
     try {
       showDialog(context: context, barrierDismissible: false, builder: (c) => const Center(child: CircularProgressIndicator()));
       
@@ -508,13 +512,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
         _razorpay.open(options);
       } catch (err) {
         debugPrint('Razorpay Open Error: $err');
-        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not open Razorpay UI: $err')));
+        if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.couldNotOpenRazorpay}$err')));
       }
     } catch (e) {
       debugPrint('Order Setup Error: $e');
       if (!mounted) return;
       Navigator.pop(context); // Close loading
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order Setup Failed: $e')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.orderSetupFailed}$e')));
     }
   }
 

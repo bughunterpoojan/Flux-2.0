@@ -185,6 +185,20 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> getProfitPlanningData() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access');
+    final response = await http.get(
+      Uri.parse('${baseUrl}farmer/profit-planning/'),
+      headers: {'Authorization': 'Bearer $token'},
+    ).timeout(const Duration(seconds: 10));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load profit planning data');
+    }
+  }
+
   Future<List<dynamic>> getMyProducts() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access');
@@ -323,6 +337,63 @@ class ApiService {
       return json.decode(response.body);
     } else {
       throw Exception('Failed to update profile');
+    }
+  }
+
+  Future<void> register(Map<String, dynamic> data) async {
+    final response = await http.post(
+      Uri.parse('${baseUrl}auth/register/'),
+      headers: {'Content-Type': 'application/json'},
+      body: json.encode(data),
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode != 201) {
+      throw Exception('Registration failed: ${response.body}');
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyGSTIN(String gstin) async {
+    final response = await http.get(
+      Uri.parse('${baseUrl}gstin/?gstin=$gstin'),
+    ).timeout(const Duration(seconds: 15));
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('GSTIN verification failed: ${response.body}');
+    }
+  }
+
+  Future<List<dynamic>> getNegotiationMessages(int negotiationId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access');
+    final response = await http.get(
+      Uri.parse('${baseUrl}negotiation-messages/?negotiation=$negotiationId'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load messages');
+    }
+  }
+
+  Future<Map<String, dynamic>> sendNegotiationMessage(int negotiationId, String message) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access');
+    final response = await http.post(
+      Uri.parse('${baseUrl}negotiation-messages/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'negotiation': negotiationId,
+        'text': message,
+      }),
+    );
+    if (response.statusCode == 201) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to send message: ${response.body}');
     }
   }
 

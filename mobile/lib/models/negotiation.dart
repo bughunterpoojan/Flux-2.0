@@ -3,6 +3,7 @@ class Negotiation {
   final String? productName;
   final String? productImage;
   final String? buyerName;
+  final String? farmerName;
   final double offeredPrice;
   final double originalPrice;
   final String? unit;
@@ -15,6 +16,7 @@ class Negotiation {
     this.productName,
     this.productImage,
     this.buyerName,
+    this.farmerName,
     required this.offeredPrice,
     required this.originalPrice,
     this.unit,
@@ -29,6 +31,7 @@ class Negotiation {
       productName: json['product_name'],
       productImage: json['product_image'],
       buyerName: json['buyer_name'],
+      farmerName: json['farmer_name'],
       offeredPrice: double.parse(json['offered_price'].toString()),
       originalPrice: double.parse(json['original_price'].toString()),
       unit: json['unit'],

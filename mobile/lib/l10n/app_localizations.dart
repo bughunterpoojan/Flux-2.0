@@ -31,6 +31,23 @@ class AppLocalizations {
       'change_language': 'Change Language',
       'logout': 'Logout',
       'crops': 'Crops',
+      'owner_name': 'Owner Name',
+      'owner_name_hint': 'Full legal name of owner',
+      'business_verification': 'Business Verification (GSTIN)',
+      'enter_gstin': 'Enter 15-digit GSTIN',
+      'verify': 'Verify',
+      'verifying': 'Verifying...',
+      'gstin_verified': 'GSTIN Verified successfully',
+      'gstin_error': 'Invalid GSTIN or verification failed',
+      'i_am_a': 'I am a...',
+      'farmer': 'Farmer (Seller)',
+      'buyer': 'Buyer (Store/NGO)',
+      'register': 'Register',
+      'already_have_account': 'Already have an account? Login',
+      'no_account': "Don't have an account? Sign Up",
+      'chat_hint': 'Type a message...',
+      'send': 'Send',
+      'negotiation_chat': 'Negotiation Chat',
       'mandi_price': 'Mandi Price',
       'status': 'Status',
       'pending': 'Pending',
@@ -81,6 +98,37 @@ class AppLocalizations {
       'order_status_update': 'Order marked as',
       'error_prefix': 'Error: ',
       'extra_shipping_fee': 'Extra Shipping Fee',
+      'username': 'Username',
+      'username_hint': 'Enter your name',
+      'email': 'Email',
+      'email_hint': 'john@example.com',
+      'password': 'Password',
+      'password_hint': '••••••••',
+      'farm_name': 'Farm Name',
+      'farm_name_hint': 'e.g. Green Valley',
+      'address': 'Address',
+      'address_hint': 'Full address for logistics',
+      'welcome_title': 'Welcome to AgriMarket',
+      'login_subtitle': 'Login to your farm account',
+      'login_now': 'Login Now',
+      'registration_success': 'Registration successful! Please login.',
+      'registration_failed': 'Registration failed: ',
+      'gstin_verification_failed': 'GSTIN verification failed',
+      'join_community': 'Join our farm-to-market community',
+      'gstin': 'GSTIN',
+      'delivery_address': 'Delivery Address',
+      'latitude': 'Latitude',
+      'longitude': 'Longitude',
+      'logistics_delivery': 'Logistics & Delivery',
+      'profile_updated': 'Profile updated!',
+      'save_changes': 'Save Changes',
+      'invalid_credentials': 'Invalid username or password',
+      'payment_success': 'Payment Successful! Order placed.',
+      'verification_failed': 'Verification Failed: ',
+      'payment_failed': 'Payment Failed',
+      'external_wallet': 'External Wallet: ',
+      'order_setup_failed': 'Order Setup Failed: ',
+      'could_not_open_razorpay': 'Could not open Razorpay UI: ',
     },
     'hi': {
       'app_title': 'खेत से बाजार तक',
@@ -104,6 +152,23 @@ class AppLocalizations {
       'change_language': 'भाषा बदलें',
       'logout': 'लॉगआउट',
       'crops': 'फसलें',
+      'owner_name': 'मालिक का नाम',
+      'owner_name_hint': 'मालिक का पूरा कानूनी नाम',
+      'business_verification': 'व्यवसाय सत्यापन (GSTIN)',
+      'enter_gstin': '15-अंकीय GSTIN दर्ज करें',
+      'verify': 'सत्यापित करें',
+      'verifying': 'जाँच हो रही है...',
+      'gstin_verified': 'GSTIN सफलतापूर्वक सत्यापित',
+      'gstin_error': 'अमान्य GSTIN या सत्यापन विफल',
+      'i_am_a': 'मैं एक हूँ...',
+      'farmer': 'किसान (विक्रेता)',
+      'buyer': 'खरीदार (स्टोर/एनजीओ)',
+      'register': 'पंजीकरण करें',
+      'already_have_account': 'पहले से ही एक खाता है? लॉगिन करें',
+      'no_account': "खाता नहीं है? साइन अप करें",
+      'chat_hint': 'एक संदेश टाइप करें...',
+      'send': 'भेजें',
+      'negotiation_chat': 'बातचीत चैट',
       'mandi_price': 'मंडी भाव',
       'status': 'स्थिति',
       'pending': 'लंबित',
@@ -154,6 +219,37 @@ class AppLocalizations {
       'order_status_update': 'ऑर्डर को चिह्नित किया गया',
       'error_prefix': 'त्रुटि: ',
       'extra_shipping_fee': 'अतिरिक्त शिपिंग शुल्क',
+      'username': 'उपयोगकर्ता नाम',
+      'username_hint': 'अपना नाम दर्ज करें',
+      'email': 'ईमेल',
+      'email_hint': 'नाम@उदाहरण.कॉम',
+      'password': 'पासवर्ड',
+      'password_hint': '••••••••',
+      'farm_name': 'फार्म का नाम',
+      'farm_name_hint': 'जैसे: ग्रीन वैली',
+      'address': 'पता',
+      'address_hint': 'लॉजिस्टिक्स के लिए पूरा पता',
+      'welcome_title': 'AgriMarket में आपका स्वागत है',
+      'login_subtitle': 'अपने फार्म खाते में लॉगिन करें',
+      'login_now': 'अभी लॉगिन करें',
+      'registration_success': 'पंजीकरण सफल! कृपया लॉगिन करें।',
+      'registration_failed': 'पंजीकरण विफल: ',
+      'gstin_verification_failed': 'GSTIN सत्यापन विफल रहा',
+      'join_community': 'हमारे फार्म-टू-मार्केट समुदाय में शामिल हों',
+      'gstin': 'GSTIN',
+      'delivery_address': 'वितरण का पता',
+      'latitude': 'अक्षांश',
+      'longitude': 'देशांतर',
+      'logistics_delivery': 'लॉजिस्टिक्स और डिलीवरी',
+      'profile_updated': 'प्रोफ़ाइल अपडेट हो गई!',
+      'save_changes': 'बदलाव सहेजें',
+      'invalid_credentials': 'अमान्य उपयोगकर्ता नाम या पासवर्ड',
+      'payment_success': 'भुगतान सफल! आदेश दिया गया।',
+      'verification_failed': 'सत्यापन विफल: ',
+      'payment_failed': 'भुगतान विफल',
+      'external_wallet': 'बाहरी वॉलेट: ',
+      'order_setup_failed': 'ऑर्डर सेटअप विफल: ',
+      'could_not_open_razorpay': 'रेजरपे यूआई नहीं खुल सका: ',
     },
   };
 
@@ -229,6 +325,54 @@ class AppLocalizations {
   String get orderStatusUpdate => translate('order_status_update');
   String get errorPrefix => translate('error_prefix');
   String get noResultsFound => translate('no_results_found');
+  String get ownerName => translate('owner_name');
+  String get ownerNameHint => translate('owner_name_hint');
+  String get businessVerification => translate('business_verification');
+  String get enterGstin => translate('enter_gstin');
+  String get verify => translate('verify');
+  String get verifying => translate('verifying');
+  String get gstinVerified => translate('gstin_verified');
+  String get gstinError => translate('gstin_error');
+  String get iAmA => translate('i_am_a');
+  String get farmerRole => translate('farmer');
+  String get buyerRole => translate('buyer');
+  String get register => translate('register');
+  String get alreadyHaveAccount => translate('already_have_account');
+  String get noAccount => translate('no_account');
+  String get chatHint => translate('chat_hint');
+  String get send => translate('send');
+  String get negotiationChat => translate('negotiation_chat');
+  String get username => translate('username');
+  String get usernameHint => translate('username_hint');
+  String get email => translate('email');
+  String get emailHint => translate('email_hint');
+  String get password => translate('password');
+  String get passwordHint => translate('password_hint');
+  String get farmName => translate('farm_name');
+  String get farmNameHint => translate('farm_name_hint');
+  String get address => translate('address');
+  String get addressHint => translate('address_hint');
+  String get welcomeTitle => translate('welcome_title');
+  String get loginSubtitle => translate('login_subtitle');
+  String get loginNow => translate('login_now');
+  String get registrationSuccess => translate('registration_success');
+  String get registrationFailed => translate('registration_failed');
+  String get gstinVerificationFailed => translate('gstin_verification_failed');
+  String get joinCommunity => translate('join_community');
+  String get gstin => translate('gstin');
+  String get deliveryAddress => translate('delivery_address');
+  String get latitude => translate('latitude');
+  String get longitude => translate('longitude');
+  String get logisticsDelivery => translate('logistics_delivery');
+  String get profileUpdated => translate('profile_updated');
+  String get saveChanges => translate('save_changes');
+  String get invalidCredentials => translate('invalid_credentials');
+  String get paymentSuccess => translate('payment_success');
+  String get verificationFailed => translate('verification_failed');
+  String get paymentFailed => translate('payment_failed');
+  String get externalWallet => translate('external_wallet');
+  String get orderSetupFailed => translate('order_setup_failed');
+  String get couldNotOpenRazorpay => translate('could_not_open_razorpay');
 
   static const LocalizationsDelegate<AppLocalizations> delegate = _AppLocalizationsDelegate();
 }

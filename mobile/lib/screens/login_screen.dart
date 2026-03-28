@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import 'buyer_home_shell.dart';
 import 'farmer_home.dart';
+import 'register_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -18,12 +21,17 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
 
   Future<void> _handleLogin() async {
+    final l10n = AppLocalizations.of(context)!;
     setState(() => _isLoading = true);
     try {
       await _apiService.login(
         _usernameController.text,
         _passwordController.text,
       );
+      
+      final String username = _usernameController.text;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('username', username);
       
       // Fetch profile to get role
       final profile = await _apiService.updateProfile({}); // Empty patch to get current data
@@ -45,7 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid username or password')),
+          SnackBar(content: Text(l10n.invalidCredentials)),
         );
       }
     } finally {
@@ -55,6 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -71,7 +80,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const SizedBox(height: 32),
               Text(
-                'Welcome to AgriMarket',
+                l10n.welcomeTitle,
                 style: GoogleFonts.outfit(
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
@@ -80,18 +89,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'Login to your farm account',
-                style: TextStyle(
+              Text(
+                l10n.loginSubtitle,
+                style: const TextStyle(
                   fontSize: 16,
                   color: Colors.grey,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: 48),
-              _buildField('Username', 'Enter your name', _usernameController, false),
+              _buildField(l10n.username, l10n.usernameHint, _usernameController, false),
               const SizedBox(height: 24),
-              _buildField('Password', '••••••••', _passwordController, true),
+              _buildField(l10n.password, l10n.passwordHint, _passwordController, true),
               const SizedBox(height: 48),
               SizedBox(
                 width: double.infinity,
@@ -109,19 +118,24 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   child: _isLoading 
                     ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                        'Login Now',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    : Text(
+                        l10n.loginNow,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                 ),
               ),
               const SizedBox(height: 32),
               Center(
                 child: TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    "Don't have an account? Sign Up",
-                    style: TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                    );
+                  },
+                  child: Text(
+                    l10n.noAccount,
+                    style: const TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.bold),
                   ),
                 ),
               ),

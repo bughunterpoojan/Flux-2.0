@@ -40,6 +40,7 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+    final l10n = AppLocalizations.of(context)!;
     
     setState(() => _isSaving = true);
     try {
@@ -56,7 +57,7 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
       final updatedProfile = UserProfile.fromJson(updatedData);
       widget.onUpdate(updatedProfile);
       
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Profile updated!')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(l10n.profileUpdated)));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
@@ -96,21 +97,21 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
               ],
             ),
             const SizedBox(height: 30),
-            _buildSectionHeader('Business Identity'),
+            _buildSectionHeader(l10n.businessVerification),
             const SizedBox(height: 15),
-            _buildField('Business Name', _businessController, Icons.storefront),
+            _buildField(l10n.ownerName, _businessController, Icons.storefront),
             const SizedBox(height: 15),
-            _buildField('GSTIN', _gstinController, Icons.verified_user_outlined),
+            _buildField(l10n.gstin, _gstinController, Icons.verified_user_outlined),
             const SizedBox(height: 30),
-            _buildSectionHeader('Logistics & Delivery'),
+            _buildSectionHeader(l10n.logisticsDelivery),
             const SizedBox(height: 15),
-            _buildField('Delivery Address', _addressController, Icons.location_on_outlined, maxLines: 3),
+            _buildField(l10n.deliveryAddress, _addressController, Icons.location_on_outlined, maxLines: 3),
             const SizedBox(height: 15),
             Row(
               children: [
-                Expanded(child: _buildField('Latitude', _latController, Icons.map_outlined, keyboardType: TextInputType.number)),
+                Expanded(child: _buildField(l10n.latitude, _latController, Icons.map_outlined, keyboardType: TextInputType.number)),
                 const SizedBox(width: 15),
-                Expanded(child: _buildField('Longitude', _lngController, Icons.map_outlined, keyboardType: TextInputType.number)),
+                Expanded(child: _buildField(l10n.longitude, _lngController, Icons.map_outlined, keyboardType: TextInputType.number)),
               ],
             ),
             SizedBox(
@@ -124,9 +125,9 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   elevation: 0,
                 ),
-                child: _isSaving 
+                  child: _isSaving 
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(l10n.translate('status') == 'delivered' ? 'Save Changes' : 'Save Changes', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 16)), 
+                  : Text(l10n.saveChanges, style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 16)), 
               ),
             ),
             const SizedBox(height: 15),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../models/negotiation.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'chat_screen.dart';
 
 class ActiveBidsScreen extends StatefulWidget {
   const ActiveBidsScreen({super.key});
@@ -220,8 +221,35 @@ class _ActiveBidsScreenState extends State<ActiveBidsScreen> {
               child: Text('Message: "${bid.message}"', style: GoogleFonts.outfit(fontSize: 12, color: Colors.blueGrey[600], fontStyle: FontStyle.italic)),
             ),
           ],
+        if (bid.status == 'pending' || bid.status == 'countered' || bid.status == 'accepted') ...[
+            const SizedBox(height: 15),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ChatScreen(
+                        negotiationId: bid.id,
+                        otherUserName: bid.buyerName ?? 'Buyer',
+                      ),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.chat_outlined, size: 18),
+                label: const Text('Chat with Buyer', style: TextStyle(fontWeight: FontWeight.bold)),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF16A34A),
+                  side: const BorderSide(color: Color(0xFF16A34A)),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
           if (bid.status == 'pending' || bid.status == 'countered') ...[
-            const SizedBox(height: 25),
+            const SizedBox(height: 10),
             Row(
               children: [
                 Expanded(
