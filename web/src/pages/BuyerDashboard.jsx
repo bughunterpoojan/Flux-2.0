@@ -43,6 +43,12 @@ const BuyerDashboard = () => {
   const [podCodeInput, setPodCodeInput] = useState('');
   const [logisticsSubmitting, setLogisticsSubmitting] = useState(false);
   const [payingExtraOrderId, setPayingExtraOrderId] = useState(null);
+  const [myReviews, setMyReviews] = useState([]);
+  const [reviewOrder, setReviewOrder] = useState(null);
+  const [reviewProductId, setReviewProductId] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewComment, setReviewComment] = useState('');
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const navigate = useNavigate();
 
   const showToast = (message) => {
@@ -93,16 +99,25 @@ const BuyerDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [prodRes, orderRes, profileRes, negRes] = await Promise.all([
+      const [prodRes, orderRes, profileRes, negRes, reviewRes] = await Promise.all([
         api.get('products/'),
         api.get('orders/'),
         api.get('auth/profile/'),
-        api.get('negotiations/')
+        api.get('negotiations/'),
+        api.get('reviews/?mine=true')
       ]);
       setProducts(prodRes.data);
-      setOrders(orderRes.data);
+      setOrders(
+        [...orderRes.data].sort((a, b) => {
+          const aTime = new Date(a.created_at || 0).getTime();
+          const bTime = new Date(b.created_at || 0).getTime();
+          if (bTime !== aTime) return bTime - aTime;
+          return Number(b.id || 0) - Number(a.id || 0);
+        })
+      );
       setUserProfile(profileRes.data);
       setNegotiations(negRes.data);
+      setMyReviews(reviewRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -385,6 +400,68 @@ const BuyerDashboard = () => {
     }
   };
 
+  const getOrderReviews = (order) => {
+    const productIds = (order?.items || []).map((item) => Number(item.product));
+    return myReviews.filter((review) => productIds.includes(Number(review.product)));
+  };
+
+  const handleOpenReview = (order) => {
+    const firstItem = order?.items?.[0];
+    if (!firstItem) {
+      alert('No order items available to review.');
+      return;
+    }
+
+    const initialProductId = Number(firstItem.product);
+    const existing = myReviews.find((review) => Number(review.product) === initialProductId);
+
+    setReviewOrder(order);
+    setReviewProductId(String(initialProductId));
+    setReviewRating(existing?.rating || 5);
+    setReviewComment(existing?.comment || '');
+  };
+
+  const handleReviewProductChange = (value) => {
+    setReviewProductId(value);
+    const existing = myReviews.find((review) => Number(review.product) === Number(value));
+    setReviewRating(existing?.rating || 5);
+    setReviewComment(existing?.comment || '');
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+
+    if (!reviewProductId) {
+      alert('Please select a product to review.');
+      return;
+    }
+
+    if (!reviewComment.trim()) {
+      alert('Please add feedback comment.');
+      return;
+    }
+
+    setReviewSubmitting(true);
+    try {
+      await api.post('reviews/', {
+        product: Number(reviewProductId),
+        rating: Number(reviewRating),
+        comment: reviewComment.trim(),
+      });
+      alert('Thanks! Your farmer rating and feedback are saved.');
+      setReviewOrder(null);
+      setReviewComment('');
+      setReviewRating(5);
+      await fetchData();
+    } catch (err) {
+      console.error(err);
+      const apiMessage = err?.response?.data?.error || err?.response?.data?.detail || 'Unable to submit feedback right now.';
+      alert(Array.isArray(apiMessage) ? apiMessage.join(', ') : String(apiMessage));
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
+
   const demoBuyerBid = {
     id: 'demo-buyer-bid-1',
     product: null,
@@ -600,7 +677,14 @@ const BuyerDashboard = () => {
                         <div className="flex items-center gap-2 text-slate-500">
                           <MapPin size={14} className="text-red-400" />
                           <span className="text-xs font-bold leading-none">Dist: {calculateDisplayDistance(p)}</span>
-                          <span className="text-xs font-bold px-2 py-0.5 bg-slate-100 rounded text-slate-600 ml-auto">{p.farmer_name || 'AgriFarmer'}</span>
+                          <div className="ml-auto flex items-center gap-1">
+                            <span className="text-xs font-bold px-2 py-0.5 bg-slate-100 rounded text-slate-600">{p.farmer_name || 'AgriFarmer'}</span>
+                            <div className="flex items-center gap-0.5">
+                              <span className="text-yellow-400">★</span>
+                              <span className="text-xs font-bold text-slate-600">{p.farmer_avg_rating || 0}</span>
+                              <span className="text-xs text-slate-400">({p.farmer_total_reviews || 0})</span>
+                            </div>
+                          </div>
                         </div>
                         <p className="text-sm text-slate-500 font-medium line-clamp-2 leading-relaxed">{p.description}</p>
                       </div>
@@ -845,6 +929,37 @@ const BuyerDashboard = () => {
                         <p className="text-sm font-black text-emerald-700">POD verified. Delivery confirmed.</p>
                       </div>
                     )}
+
+                    {order.status === 'delivered' && (
+                      <div className="rounded-2xl border border-yellow-100 bg-yellow-50 p-4 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-black text-yellow-800">Rating and Review System</p>
+                            <p className="text-xs text-yellow-700 font-semibold">Rate farmer service and share your feedback for this order.</p>
+                          </div>
+                          <button
+                            onClick={() => handleOpenReview(order)}
+                            className="px-4 py-2 rounded-xl bg-yellow-500 text-white font-black hover:bg-yellow-600"
+                          >
+                            Rate Farmer
+                          </button>
+                        </div>
+
+                        {getOrderReviews(order).length > 0 && (
+                          <div className="space-y-2">
+                            {getOrderReviews(order).map((review) => (
+                              <div key={review.id} className="rounded-xl bg-white border border-yellow-100 px-3 py-2">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs font-black text-slate-800">{review.product_name}</p>
+                                  <p className="text-xs font-black text-yellow-700">{review.rating}/5</p>
+                                </div>
+                                <p className="text-xs text-slate-600 mt-1">{review.comment}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -949,6 +1064,85 @@ const BuyerDashboard = () => {
                     </button>
                   )}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {reviewOrder && (
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-center justify-center p-6">
+              <div className="bg-white w-full max-w-2xl rounded-[2rem] p-8 shadow-2xl">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-3xl font-black text-slate-900">Farmer Rating & Buyer Feedback</h3>
+                    <p className="text-slate-500 font-medium mt-1">Order #{reviewOrder.id} • Share your delivery experience</p>
+                  </div>
+                  <button
+                    onClick={() => setReviewOrder(null)}
+                    className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmitReview} className="space-y-6">
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wide text-slate-400">Product</label>
+                    <select
+                      value={reviewProductId}
+                      onChange={(e) => handleReviewProductChange(e.target.value)}
+                      className="mt-2 w-full px-4 py-3 border border-slate-200 rounded-xl font-semibold outline-none focus:border-yellow-500"
+                    >
+                      {(reviewOrder.items || []).map((item) => (
+                        <option key={item.id} value={item.product}>{item.product_name || `Product #${item.product}`}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wide text-slate-400">Farmer Rating</label>
+                    <div className="flex items-center gap-2 mt-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setReviewRating(star)}
+                          className={`p-1 ${star <= reviewRating ? 'text-yellow-500' : 'text-slate-300'}`}
+                        >
+                          <Star size={28} fill={star <= reviewRating ? 'currentColor' : 'none'} />
+                        </button>
+                      ))}
+                      <span className="ml-2 text-sm font-black text-slate-700">{reviewRating}/5</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-black uppercase tracking-wide text-slate-400">Buyer Feedback</label>
+                    <textarea
+                      value={reviewComment}
+                      onChange={(e) => setReviewComment(e.target.value)}
+                      rows={4}
+                      placeholder="Write your feedback about crop quality, packaging, and delivery coordination..."
+                      className="mt-2 w-full px-4 py-3 border border-slate-200 rounded-xl font-medium outline-none focus:border-yellow-500 resize-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setReviewOrder(null)}
+                      className="px-5 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold hover:bg-slate-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={reviewSubmitting}
+                      className="px-5 py-2.5 rounded-xl bg-yellow-500 text-white font-black hover:bg-yellow-600 disabled:bg-yellow-300"
+                    >
+                      {reviewSubmitting ? 'Saving...' : 'Submit Feedback'}
+                    </button>
+                  </div>
+                </form>
               </div>
             </div>
           )}
@@ -1147,9 +1341,16 @@ const BuyerDashboard = () => {
                   <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-primary-600 shadow-sm">
                     <Store size={24} />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Farmer</p>
-                    <p className="text-lg font-black text-slate-900">{selectedProduct.farmer_name || 'AgriFarmer'}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-lg font-black text-slate-900">{selectedProduct.farmer_name || 'AgriFarmer'}</p>
+                      <div className="flex items-center gap-0.5">
+                        <span className="text-yellow-400 text-sm">★</span>
+                        <span className="text-sm font-bold text-slate-600">{selectedProduct.farmer_avg_rating || 0}</span>
+                        <span className="text-sm text-slate-400">({selectedProduct.farmer_total_reviews || 0})</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
@@ -1193,7 +1394,17 @@ const BuyerDashboard = () => {
           <div className="bg-white w-full max-w-md rounded-[3rem] p-10 shadow-2xl relative animate-in zoom-in-95 duration-300">
             <button onClick={() => setShowNegotiate(null)} className="absolute top-8 right-8 text-slate-300 hover:text-slate-900"><X size={28} /></button>
             <h3 className="text-3xl font-black text-slate-900 mb-2">Negotiate Price</h3>
-            <p className="text-slate-500 font-medium mb-8">Send an offer directly to {showNegotiate.farmer_name}.</p>
+            <div className="mb-8">
+              <p className="text-slate-500 font-medium">Send an offer directly to</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="font-black text-slate-900">{showNegotiate.farmer_name}</span>
+                <div className="flex items-center gap-0.5">
+                  <span className="text-yellow-400 text-sm">★</span>
+                  <span className="text-sm font-bold text-slate-600">{showNegotiate.farmer_avg_rating || 0}</span>
+                  <span className="text-sm text-slate-400">({showNegotiate.farmer_total_reviews || 0})</span>
+                </div>
+              </div>
+            </div>
             
             <form onSubmit={handleNegotiate} className="space-y-6">
               <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex justify-between items-center">
