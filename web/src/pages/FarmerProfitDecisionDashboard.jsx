@@ -32,7 +32,7 @@ const periodLabelMap = {
 
 const shareColors = ['#4FAE67', '#7BC67E', '#A6D988', '#D6E7A3', '#F6E6A5', '#E6B782'];
 
-const formatCurrency = (value) => `?${Math.round(value).toLocaleString('en-IN')}`;
+const formatCurrency = (value) => `₹${Math.round(value).toLocaleString('en-IN')}`;
 
 const formatMonthLabel = (date) =>
   date.toLocaleString('en-IN', { month: 'short' });
@@ -409,6 +409,171 @@ function FarmerProfitDecisionDashboard({ userProfile, products = [], orders = []
               </button>
             </div>
           </div>
+
+          {profitView === 'performance' && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Total Revenue</p>
+                  <p className="text-3xl font-extrabold text-emerald-700 mt-2">{formatCurrency(metrics.revenue)}</p>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">From accepted, shipped and delivered orders</p>
+                </div>
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Total Units Sold</p>
+                  <p className="text-3xl font-extrabold text-amber-700 mt-2">{metrics.unitsSold.toLocaleString('en-IN')}</p>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">Measured in {totalUnitsLabel}</p>
+                </div>
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Total Orders</p>
+                  <p className="text-3xl font-extrabold text-slate-900 mt-2">{metrics.totalOrders}</p>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">Orders matching current filters</p>
+                </div>
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Best Performing Crop</p>
+                  <p className="text-3xl font-extrabold text-emerald-700 mt-2">{metrics.bestCrop}</p>
+                  <p className="text-xs text-slate-500 mt-1 font-medium">Top crop by current revenue</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
+                  <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Crop vs Revenue</h3>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={tableData} margin={{ top: 4, right: 10, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="crop" tick={{ fill: '#475569', fontWeight: 700 }} />
+                        <YAxis tick={{ fill: '#64748b', fontWeight: 600 }} width={76} />
+                        <Tooltip formatter={(value) => formatCurrency(value)} />
+                        <Bar dataKey="revenue" radius={[10, 10, 6, 6]} fill="#4FAE67" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
+                  <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Price Trends</h3>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={trendData} margin={{ top: 4, right: 10, left: 0, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                        <XAxis dataKey="month" tick={{ fill: '#475569', fontWeight: 700 }} />
+                        <YAxis tick={{ fill: '#64748b', fontWeight: 600 }} width={76} />
+                        <Tooltip formatter={(value) => formatCurrency(value)} />
+                        <Line
+                          type="monotone"
+                          dataKey="price"
+                          stroke="#D08770"
+                          strokeWidth={3}
+                          dot={{ r: 4, fill: '#D08770' }}
+                          activeDot={{ r: 6 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {profitView === 'insights' && (
+            <>
+              <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
+                  <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Revenue Share by Crop</h3>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={pieData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={64}
+                          outerRadius={104}
+                          paddingAngle={2}
+                        >
+                          {pieData.map((entry, index) => (
+                            <Cell key={entry.name} fill={shareColors[index % shareColors.length]} />
+                          ))}
+                        </Pie>
+                        <Tooltip formatter={(value) => formatCurrency(value)} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    {shareLegend.map((item) => (
+                      <div key={item.label} className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.color }} />
+                        <span className="text-xs font-semibold text-slate-600">{item.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 2xl:col-span-2">
+                  <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Insights Panel</h3>
+                  <div className="space-y-3">
+                    {insights.map((text) => (
+                      <div key={text} className="flex items-start gap-3 bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4">
+                        <div className="w-8 h-8 rounded-xl bg-white border border-emerald-200 flex items-center justify-center mt-0.5">
+                          <TrendingUp className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <p className="text-sm font-medium text-slate-700 leading-relaxed">{text}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
+                <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Crop Sales Table</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[760px]">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200">
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Crop</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Units Sold</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Avg Selling Price</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Revenue</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Orders</th>
+                        <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Demand Level</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tableData.map((row) => (
+                        <tr key={row.crop} className="border-b border-slate-100 hover:bg-slate-50/70 transition-colors">
+                          <td className="px-4 py-4 font-bold text-slate-900">
+                            <span className="inline-flex items-center gap-2">
+                              <Sprout className="w-4 h-4 text-emerald-600" />
+                              {row.crop}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4 font-semibold text-slate-700">{row.unitsSold.toLocaleString('en-IN')} {row.unit}</td>
+                          <td className="px-4 py-4 font-semibold text-slate-700">{formatCurrency(row.avgPrice)} / {row.unit}</td>
+                          <td className="px-4 py-4 font-bold text-emerald-700">{formatCurrency(row.revenue)}</td>
+                          <td className="px-4 py-4 font-semibold text-slate-700">{row.orders}</td>
+                          <td className="px-4 py-4">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${demandBadgeClass[row.demandLevel] || demandBadgeClass.Low}`}>
+                              {row.demandLevel}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                      {tableData.length === 0 && (
+                        <tr>
+                          <td colSpan={6} className="px-4 py-10 text-center text-slate-500 font-semibold">
+                            No real sales data found for selected filters.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
 
           <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-lime-600 text-white px-5 py-4 shadow-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
