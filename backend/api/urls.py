@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     RegisterView, ProfileView, AppyFlowGSTINView, OpenAIPriceSuggestionView,
-    FarmerStatsView, AILogisticsFeeView, ProductViewSet, OrderViewSet, NegotiationViewSet, 
+    FarmerStatsView, AILogisticsFeeView, ProductViewSet, OrderViewSet, NegotiationViewSet,
+    ReviewViewSet,
     NegotiationMessageViewSet, RazorpayPaymentView
 )
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -11,6 +12,7 @@ router = DefaultRouter()
 router.register(r'products', ProductViewSet)
 router.register(r'orders', OrderViewSet)
 router.register(r'negotiations', NegotiationViewSet, basename='negotiation')
+router.register(r'reviews', ReviewViewSet, basename='review')
 router.register(r'negotiation-messages', NegotiationMessageViewSet, basename='negotiation-message')
 
 urlpatterns = [

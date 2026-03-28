@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.db.models import Avg, Count
 from .models import User, Product, Order, OrderItem, Negotiation, Payment, Review, NegotiationMessage
 
 class UserSerializer(serializers.ModelSerializer):
@@ -33,6 +34,16 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class ProductSerializer(serializers.ModelSerializer):
     farmer_name = serializers.CharField(source='farmer.username', read_only=True)
+    farmer_avg_rating = serializers.SerializerMethodField()
+    farmer_total_reviews = serializers.SerializerMethodField()
+    
+    def get_farmer_avg_rating(self, obj):
+        avg_rating = Review.objects.filter(product__farmer=obj.farmer).aggregate(Avg('rating'))['rating__avg']
+        return round(avg_rating, 1) if avg_rating else 0
+    
+    def get_farmer_total_reviews(self, obj):
+        return Review.objects.filter(product__farmer=obj.farmer).count()
+    
     class Meta:
         model = Product
         fields = '__all__'
@@ -40,6 +51,17 @@ class ProductSerializer(serializers.ModelSerializer):
 
 class OrderItemSerializer(serializers.ModelSerializer):
     product_name = serializers.CharField(source='product.name', read_only=True)
+    farmer_name = serializers.CharField(source='product.farmer.username', read_only=True)
+    farmer_avg_rating = serializers.SerializerMethodField()
+    farmer_total_reviews = serializers.SerializerMethodField()
+    
+    def get_farmer_avg_rating(self, obj):
+        avg_rating = Review.objects.filter(product__farmer=obj.product.farmer).aggregate(Avg('rating'))['rating__avg']
+        return round(avg_rating, 1) if avg_rating else 0
+    
+    def get_farmer_total_reviews(self, obj):
+        return Review.objects.filter(product__farmer=obj.product.farmer).count()
+    
     class Meta:
         model = OrderItem
         fields = '__all__'
@@ -81,6 +103,17 @@ class NegotiationSerializer(serializers.ModelSerializer):
     product_image = serializers.ImageField(source='product.image', read_only=True)
     original_price = serializers.DecimalField(source='product.price', max_digits=10, decimal_places=2, read_only=True)
     unit = serializers.CharField(source='product.unit', read_only=True)
+    farmer_name = serializers.CharField(source='product.farmer.username', read_only=True)
+    farmer_avg_rating = serializers.SerializerMethodField()
+    farmer_total_reviews = serializers.SerializerMethodField()
+    
+    def get_farmer_avg_rating(self, obj):
+        avg_rating = Review.objects.filter(product__farmer=obj.product.farmer).aggregate(Avg('rating'))['rating__avg']
+        return round(avg_rating, 1) if avg_rating else 0
+    
+    def get_farmer_total_reviews(self, obj):
+        return Review.objects.filter(product__farmer=obj.product.farmer).count()
+    
     class Meta:
         model = Negotiation
         fields = '__all__'
@@ -93,9 +126,18 @@ class PaymentSerializer(serializers.ModelSerializer):
 
 class ReviewSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.username', read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    farmer_name = serializers.CharField(source='product.farmer.username', read_only=True)
+
     class Meta:
         model = Review
         fields = '__all__'
+        read_only_fields = ('user',)
+
+    def validate_rating(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError('Rating must be between 1 and 5.')
+        return value
 
 class NegotiationMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.username', read_only=True)

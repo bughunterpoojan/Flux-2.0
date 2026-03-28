@@ -14,7 +14,7 @@ from .models import User, Product, Order, OrderItem, Negotiation, Payment, Revie
 from .serializers import UserSerializer, ProfileUpdateSerializer, RegisterSerializer, ProductSerializer, OrderSerializer, OrderItemSerializer, NegotiationSerializer, PaymentSerializer, ReviewSerializer, NegotiationMessageSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import AllowAny
-from django.db.models import Sum, Count, F
+from django.db.models import Sum, Count, F, Avg
 from django.utils import timezone
 from django.contrib.auth.hashers import make_password, check_password
 from datetime import timedelta
@@ -91,6 +91,11 @@ class FarmerStatsView(APIView):
             items__product__farmer=user,
             status='pending'
         ).distinct().count()
+
+        rating_data = Review.objects.filter(product__farmer=user).aggregate(
+            avg_rating=Avg('rating'),
+            total_reviews=Count('id')
+        )
         
         # 7-Day Chart Data
         chart_data = []
@@ -111,8 +116,75 @@ class FarmerStatsView(APIView):
             "total_revenue": float(total_revenue),
             "active_listings": active_listings,
             "pending_orders": pending_orders,
+            "avg_rating": round(float(rating_data['avg_rating'] or 0), 2),
+            "total_reviews": int(rating_data['total_reviews'] or 0),
             "chart_data": chart_data
         })
+
+class ReviewViewSet(viewsets.ModelViewSet):
+    serializer_class = ReviewSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        queryset = Review.objects.select_related('user', 'product', 'product__farmer').order_by('-created_at')
+        product_id = self.request.query_params.get('product')
+        mine = self.request.query_params.get('mine')
+        farmer = self.request.query_params.get('farmer')
+
+        if mine == 'true':
+            queryset = queryset.filter(user=self.request.user)
+        elif farmer == 'true':
+            queryset = queryset.filter(product__farmer=self.request.user)
+        elif self.request.user.role == 'farmer':
+            queryset = queryset.filter(product__farmer=self.request.user)
+        else:
+            queryset = queryset.filter(user=self.request.user)
+
+        if product_id:
+            queryset = queryset.filter(product_id=product_id)
+
+        return queryset
+
+    def perform_update(self, serializer):
+        if serializer.instance.user_id != self.request.user.id:
+            raise ValidationError({'error': 'You can edit only your own feedback.'})
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.user_id != self.request.user.id:
+            raise ValidationError({'error': 'You can delete only your own feedback.'})
+        instance.delete()
+
+    def create(self, request, *args, **kwargs):
+        if request.user.role != 'buyer':
+            return Response({'error': 'Only buyers can submit feedback.'}, status=status.HTTP_403_FORBIDDEN)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        product = serializer.validated_data['product']
+        rating = serializer.validated_data['rating']
+        comment = serializer.validated_data['comment']
+
+        has_delivered_order = Order.objects.filter(
+            buyer=request.user,
+            status='delivered',
+            items__product=product
+        ).exists()
+
+        if not has_delivered_order:
+            return Response({'error': 'You can review only products from your delivered orders.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        existing_review = Review.objects.filter(user=request.user, product=product).first()
+        if existing_review:
+            existing_review.rating = rating
+            existing_review.comment = comment
+            existing_review.save(update_fields=['rating', 'comment'])
+            data = self.get_serializer(existing_review).data
+            return Response(data, status=status.HTTP_200_OK)
+
+        review = serializer.save(user=request.user)
+        return Response(self.get_serializer(review).data, status=status.HTTP_201_CREATED)
 
 class OpenAIPriceSuggestionView(APIView):
     permission_classes = [permissions.IsAuthenticated]

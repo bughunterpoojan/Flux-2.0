@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Package, ShoppingCart, TrendingUp, LogOut, 
   Trash2, Edit, ChevronRight, LayoutDashboard, History,
-  Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle, User, BarChart3
+  Sparkles, Loader2, IndianRupee, MapPin, Store, CheckCircle, Clock, ArrowRight, MessageCircle, User, BarChart3, Star
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api';
@@ -41,6 +41,7 @@ const FarmerDashboard = () => {
   });
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileMessage, setProfileMessage] = useState('');
+  const [farmerReviews, setFarmerReviews] = useState([]);
   const navigate = useNavigate();
 
   const openAddModal = () => {
@@ -66,7 +67,7 @@ const FarmerDashboard = () => {
     setShowAddModal(true);
   };
 
-  const [dashboardStats, setDashboardStats] = useState({ total_revenue: 0, active_listings: 0, pending_orders: 0, chart_data: [] });
+  const [dashboardStats, setDashboardStats] = useState({ total_revenue: 0, active_listings: 0, pending_orders: 0, avg_rating: 0, total_reviews: 0, chart_data: [] });
 
   useEffect(() => {
     fetchData();
@@ -93,19 +94,28 @@ const FarmerDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [prodRes, orderRes, profileRes, statsRes, negotiationsRes] = await Promise.all([
+      const [prodRes, orderRes, profileRes, statsRes, negotiationsRes, reviewsRes] = await Promise.all([
         api.get('products/?mine=true'),
         api.get('orders/'),
         api.get('auth/profile/'),
         api.get('farmer/stats/'),
-        api.get('negotiations/')
+        api.get('negotiations/'),
+        api.get('reviews/?farmer=true')
       ]);
 
       setProducts(prodRes.data);
-      setOrders(orderRes.data);
+      setOrders(
+        [...orderRes.data].sort((a, b) => {
+          const aTime = new Date(a.created_at || 0).getTime();
+          const bTime = new Date(b.created_at || 0).getTime();
+          if (bTime !== aTime) return bTime - aTime;
+          return Number(b.id || 0) - Number(a.id || 0);
+        })
+      );
       setUserProfile(profileRes.data);
       setDashboardStats(statsRes.data);
       setNegotiations(negotiationsRes.data);
+      setFarmerReviews(reviewsRes.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -368,6 +378,8 @@ const FarmerDashboard = () => {
   };
 
   const displayedNegotiations = negotiations.length > 0 ? negotiations : [demoBid];
+  const incomingOrders = orders.filter((order) => order.status !== 'delivered' && order.status !== 'cancelled');
+  const salesHistoryOrders = orders.filter((order) => order.status === 'delivered');
 
   return (
     <div className="flex h-screen bg-slate-50 overflow-hidden font-sans">
@@ -461,7 +473,7 @@ const FarmerDashboard = () => {
         {activeTab === 'overview' && (
           <div className="space-y-12 animate-in fade-in duration-700">
             {/* Stats */}
-            <div className="grid grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-8">
               <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-4">
                 <div className="bg-green-100 w-12 h-12 rounded-xl flex items-center justify-center text-green-600">
                   <IndianRupee size={24} />
@@ -491,6 +503,19 @@ const FarmerDashboard = () => {
                   View all in queue
                 </button>
               </div>
+              <div className="bg-white p-8 rounded-3xl shadow-sm border border-slate-100 flex flex-col gap-4">
+                <div className="bg-yellow-100 w-12 h-12 rounded-xl flex items-center justify-center text-yellow-600">
+                  <Star size={24} />
+                </div>
+                <span className="text-slate-500 font-bold uppercase tracking-wider text-xs">Farmer Rating</span>
+                <div className="flex items-end gap-2">
+                  <span className="text-4xl font-black text-slate-900">{Number(dashboardStats.avg_rating || 0).toFixed(1)}</span>
+                  <span className="text-slate-500 font-bold mb-1">/5</span>
+                </div>
+                <span className="text-yellow-700 font-bold text-sm bg-yellow-50 px-2 py-1 rounded-lg self-start">
+                  {dashboardStats.total_reviews || 0} buyer reviews
+                </span>
+              </div>
             </div>
 
             {/* Chart */}
@@ -507,6 +532,39 @@ const FarmerDashboard = () => {
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+
+            <div className="bg-white p-10 rounded-3xl shadow-sm border border-slate-100">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-2xl font-bold text-slate-900">Recent Buyer Feedback</h3>
+                <span className="text-xs font-black uppercase tracking-wide px-3 py-1 rounded-full bg-yellow-50 text-yellow-700">
+                  Rating and Review System
+                </span>
+              </div>
+
+              {farmerReviews.length > 0 ? (
+                <div className="space-y-4">
+                  {farmerReviews.slice(0, 5).map((review) => (
+                    <div key={review.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <p className="font-black text-slate-900">{review.user_name}</p>
+                          <p className="text-xs text-slate-500 font-semibold">Product: {review.product_name}</p>
+                        </div>
+                        <div className="flex items-center gap-1 text-yellow-500">
+                          <Star size={16} fill="currentColor" />
+                          <span className="text-sm font-black text-slate-800">{review.rating}/5</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-slate-600 mt-2 font-medium">{review.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-slate-100 bg-slate-50 p-6 text-slate-500 font-semibold">
+                  No buyer feedback yet. Delivered orders will start showing ratings and comments here.
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -583,7 +641,7 @@ const FarmerDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {orders.map((order) => (
+                {incomingOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-slate-50/30 transition-colors">
                     <td className="px-8 py-6">
                       <span className="font-bold text-slate-900 text-lg">#{order.id.toString().padStart(4, '0')}</span>
@@ -645,6 +703,68 @@ const FarmerDashboard = () => {
                     </td>
                   </tr>
                 ))}
+                {incomingOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-8 py-12 text-center text-slate-500 font-semibold">
+                      No incoming orders. Delivered orders are moved to Sales History.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {activeTab === 'history' && (
+          <div className="bg-white rounded-[2.5rem] shadow-sm border border-slate-100 overflow-hidden animate-in fade-in duration-700">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Order ID</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Buyer</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Delivered On</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Amount</th>
+                  <th className="px-8 py-6 text-xs font-black uppercase tracking-wider text-slate-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {salesHistoryOrders.map((order) => (
+                  <tr key={order.id} className="hover:bg-slate-50/30 transition-colors">
+                    <td className="px-8 py-6">
+                      <span className="font-bold text-slate-900 text-lg">#{order.id.toString().padStart(4, '0')}</span>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-slate-500 font-bold uppercase">{order.buyer_name[0]}</div>
+                        <span className="font-bold text-slate-700">{order.buyer_name}</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <span className="text-slate-600 font-bold">{new Date(order.updated_at || order.created_at).toLocaleDateString()}</span>
+                    </td>
+                    <td className="px-8 py-6">
+                      <div className="flex flex-col">
+                        <span className="font-black text-slate-900 text-lg">₹{order.total_amount}</span>
+                        <span className="text-[10px] text-slate-400 font-bold italic">Incl. ₹{order.delivery_fee} logistics</span>
+                      </div>
+                    </td>
+                    <td className="px-8 py-6">
+                      <button
+                        onClick={() => setTrackingOrder(order)}
+                        className="text-slate-700 font-black hover:text-primary-600 hover:underline"
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {salesHistoryOrders.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-8 py-12 text-center text-slate-500 font-semibold">
+                      No delivered sales yet. Completed deliveries will appear here.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
