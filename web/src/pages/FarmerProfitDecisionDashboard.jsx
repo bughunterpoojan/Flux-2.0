@@ -13,6 +13,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 import {
   IndianRupee,
   TrendingUp,
@@ -54,12 +55,12 @@ const periodFactors = {
   '12m': 1.1,
 };
 
-const periodLabelMap = {
-  '1m': 'Last 1 Month',
-  '3m': 'Last 3 Months',
-  '6m': 'Last 6 Months',
-  '12m': 'Last 12 Months',
-};
+const periodLabelMap = (t) => ({
+  '1m': t('last_1_month'),
+  '3m': t('last_3_months'),
+  '6m': t('last_6_months'),
+  '12m': t('last_12_months'),
+});
 
 const costColors = ['#8BBF6A', '#A8D08D', '#EBCB8B', '#D08770'];
 
@@ -68,14 +69,15 @@ const formatCurrency = (value) => `₹${Math.round(value).toLocaleString('en-IN'
 const formatMonthLabel = (date) =>
   date.toLocaleString('en-IN', { month: 'short' });
 
-const demandBadgeClass = {
-  'Very High': 'bg-emerald-100 text-emerald-700',
-  High: 'bg-lime-100 text-lime-700',
-  Medium: 'bg-amber-100 text-amber-700',
-  Low: 'bg-slate-200 text-slate-600',
-};
+const demandBadgeClass = (t) => ({
+  [t('very_high')]: 'bg-emerald-100 text-emerald-700',
+  [t('high')]: 'bg-lime-100 text-lime-700',
+  [t('medium_demand')]: 'bg-amber-100 text-amber-700',
+  [t('low')]: 'bg-slate-200 text-slate-600',
+});
 
 function FarmerProfitDecisionDashboard({ userProfile }) {
+  const { t } = useTranslation();
   const [selectedState, setSelectedState] = useState('Maharashtra');
   const [selectedCity, setSelectedCity] = useState('Nashik');
   const [selectedCrop, setSelectedCrop] = useState('All Crops');
@@ -90,20 +92,28 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
     const periodFactor = periodFactors[timePeriod] || 1;
 
     return cropBaseData
-      .filter((item) => selectedCrop === 'All Crops' || item.crop === selectedCrop)
+      .filter((item) => selectedCrop === t('all_crops') || item.crop === selectedCrop)
       .map((item) => {
         const adjustedCost = item.cost * region.cost * (0.97 + periodFactor * 0.03);
         const adjustedRevenue = item.sellingPrice * region.revenue * periodFactor;
         const profit = adjustedRevenue - adjustedCost;
+
+        const localizedDemand = {
+          'Very High': t('very_high'),
+          'High': t('high'),
+          'Medium': t('medium_demand'),
+          'Low': t('low')
+        }[item.demandLevel];
 
         return {
           ...item,
           cost: Math.round(adjustedCost),
           sellingPrice: Math.round(adjustedRevenue),
           profit: Math.round(profit),
+          demandLevel: localizedDemand
         };
       });
-  }, [selectedCrop, selectedRegion, timePeriod]);
+  }, [selectedCrop, selectedRegion, timePeriod, t]);
 
   const metrics = useMemo(() => {
     const totalCost = adjustedTableData.reduce((sum, row) => sum + row.cost, 0);
@@ -156,12 +166,12 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
     const labor = Math.max(totalCost - seeds - fertilizer - transport, 0);
 
     return [
-      { name: 'Seeds', value: seeds },
-      { name: 'Fertilizer', value: fertilizer },
-      { name: 'Transport', value: transport },
-      { name: 'Labor', value: labor },
+      { name: t('seeds'), value: seeds },
+      { name: t('fertilizer'), value: fertilizer },
+      { name: t('transport'), value: transport },
+      { name: t('labor'), value: labor },
     ];
-  }, [metrics.totalCost, selectedRegion]);
+  }, [metrics.totalCost, selectedRegion, t]);
 
   const insights = useMemo(() => {
     const [top, second] = metrics.sortedByProfit;
@@ -169,31 +179,30 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
       ? Math.round(((top.profit - second.profit) / Math.max(second.profit, 1)) * 100)
       : 0;
 
-    const transportSlice = pieData.find((slice) => slice.name === 'Transport')?.value || 0;
+    const transportSlice = pieData.find((slice) => slice.name === t('transport'))?.value || 0;
     const transportShare = Math.round((transportSlice / Math.max(metrics.totalCost, 1)) * 100);
 
     const monthlyTrendUp = trendData.length > 1
       ? trendData[trendData.length - 1].price > trendData[0].price
       : false;
-
     return [
       top && second
-        ? `${top.crop} gives ${Math.max(topVsSecond, 0)}% higher profit than ${second.crop} in this period.`
-        : 'Add more crop entries to generate comparative profitability insights.',
+        ? t('profit_insight_higher', { top: top.crop, percent: Math.max(topVsSecond, 0), second: second.crop })
+        : t('add_entries_insight'),
       transportShare >= 23
-        ? 'Transport cost is increasing and now contributes a larger share of total spend.'
-        : 'Transport cost is currently stable and within expected range.',
+        ? t('transport_up_insight')
+        : t('transport_stable_insight'),
       monthlyTrendUp
-        ? 'Average selling prices are trending upward in the last 6 months.'
-        : 'Average selling prices show a soft decline. Consider timing harvest to peak market windows.',
+        ? t('price_up_insight')
+        : t('price_down_insight'),
     ];
-  }, [metrics, pieData, trendData]);
+  }, [metrics, pieData, trendData, t]);
 
   const costLegend = [
-    { label: 'Seeds', color: costColors[0] },
-    { label: 'Fertilizer', color: costColors[1] },
-    { label: 'Transport', color: costColors[2] },
-    { label: 'Labor', color: costColors[3] },
+    { label: t('seeds'), color: costColors[0] },
+    { label: t('fertilizer'), color: costColors[1] },
+    { label: t('transport'), color: costColors[2] },
+    { label: t('labor'), color: costColors[3] },
   ];
 
   return (
@@ -201,9 +210,9 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
       <header className="bg-gradient-to-br from-white to-emerald-50/20 rounded-3xl border border-slate-200 shadow-sm p-5 lg:p-7">
         <div className="space-y-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">AgriVision Dashboard</h1>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t('agrivision_title')}</h1>
             <p className="text-slate-500 font-medium mt-1 text-base">
-              Farmer Profit Decision Dashboard for crop-wise profitability analysis.
+              {t('profit_subtitle')}
             </p>
           </div>
 
@@ -211,7 +220,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
             <div className="flex items-center gap-3 bg-emerald-50/70 rounded-2xl px-4 py-3 border border-emerald-100 min-h-[64px]">
               <UserCircle2 className="w-6 h-6 text-emerald-700" />
               <div className="leading-tight">
-                <p className="text-[11px] uppercase tracking-wide text-emerald-700/70 font-bold">Farmer</p>
+                <p className="text-[11px] uppercase tracking-wide text-emerald-700/70 font-bold">{t('farmer_label')}</p>
                 <p className="text-sm text-slate-900 font-bold">
                   {userProfile?.business_name || userProfile?.username || 'Agri Farmer'}
                 </p>
@@ -252,7 +261,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
                 onChange={(e) => setStartDate(e.target.value)}
                 className="bg-transparent text-sm font-semibold text-slate-700 outline-none w-full min-w-0"
               />
-              <span className="text-slate-400 text-sm">to</span>
+              <span className="text-slate-400 text-sm">{t('to')}</span>
               <input
                 type="date"
                 value={endDate}
@@ -270,18 +279,18 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
             <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
               <Filter className="w-5 h-5 text-emerald-600" />
             </div>
-            <h2 className="text-xl font-extrabold">Filters Panel</h2>
+            <h2 className="text-xl font-extrabold">{t('filters_panel')}</h2>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">Crop Selection</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">{t('crop_selection')}</label>
               <select
                 value={selectedCrop}
                 onChange={(e) => setSelectedCrop(e.target.value)}
                 className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-sm font-semibold text-slate-700 outline-none focus:border-emerald-500"
               >
-                <option>All Crops</option>
+                <option>{t('all_crops')}</option>
                 {cropBaseData.map((item) => (
                   <option key={item.crop} value={item.crop}>{item.crop}</option>
                 ))}
@@ -289,7 +298,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">Region Selection</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">{t('region_selection')}</label>
               <select
                 value={selectedRegion}
                 onChange={(e) => setSelectedRegion(e.target.value)}
@@ -302,9 +311,9 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">Time Period</label>
+              <label className="block text-[11px] font-bold uppercase tracking-wide text-slate-400 mb-2">{t('time_period')}</label>
               <div className="grid grid-cols-2 gap-2">
-                {Object.entries(periodLabelMap).map(([value, label]) => (
+                {Object.entries(periodLabelMap(t)).map(([value, label]) => (
                   <button
                     key={value}
                     onClick={() => setTimePeriod(value)}
@@ -322,7 +331,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
 
             <button
               onClick={() => {
-                setSelectedCrop('All Crops');
+                setSelectedCrop(t('all_crops'));
                 setSelectedRegion('Maharashtra');
                 setTimePeriod('6m');
                 setSelectedState('Maharashtra');
@@ -332,7 +341,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
               }}
               className="w-full rounded-xl px-4 py-2.5 bg-emerald-50 text-emerald-700 font-bold text-sm border border-emerald-100 hover:bg-emerald-100 transition-colors"
             >
-              Reset Filters
+              {t('reset_filters')}
             </button>
           </div>
         </aside>
@@ -348,7 +357,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
                     : 'bg-transparent text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                Performance View
+                {t('performance_view')}
               </button>
               <button
                 onClick={() => setProfitView('insights')}
@@ -358,39 +367,39 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
                     : 'bg-transparent text-slate-600 hover:bg-slate-100'
                 }`}
               >
-                Insights & Table
+                {t('insights_table')}
               </button>
             </div>
           </div>
 
           {profitView === 'performance' && (
-            <>
-              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
+            <>              <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4">
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
-              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Total Profit</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">{t('total_profit')}</p>
               <p className="text-3xl font-extrabold text-emerald-700 mt-2">{formatCurrency(metrics.totalProfit)}</p>
-              <p className="text-xs text-slate-500 mt-1 font-medium">Net result for selected filters</p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">{t('net_result_hint')}</p>
             </div>
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
-              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Total Cost</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">{t('total_cost')}</p>
               <p className="text-3xl font-extrabold text-amber-700 mt-2">{formatCurrency(metrics.totalCost)}</p>
-              <p className="text-xs text-slate-500 mt-1 font-medium">Seeds, fertilizer, transport, labor</p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">{t('cost_breakdown_hint')}</p>
             </div>
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
-              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Revenue</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">{t('revenue')}</p>
               <p className="text-3xl font-extrabold text-slate-900 mt-2">{formatCurrency(metrics.revenue)}</p>
-              <p className="text-xs text-slate-500 mt-1 font-medium">Total selling value</p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">{t('total_selling_hint')}</p>
             </div>
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 min-h-[150px]">
-              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">Best Performing Crop</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold">{t('best_performing_crop')}</p>
               <p className="text-3xl font-extrabold text-emerald-700 mt-2">{metrics.bestCrop}</p>
-              <p className="text-xs text-slate-500 mt-1 font-medium">Top crop by current profit</p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">{t('top_crop_hint')}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6">
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
-              <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Crop vs Profit</h3>
+              <h3 className="text-2xl font-extrabold text-slate-900 mb-4">{t('crop_vs_profit')}</h3>
+
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={adjustedTableData} margin={{ top: 4, right: 10, left: 0, bottom: 0 }}>
@@ -405,7 +414,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
             </div>
 
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
-              <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Price Trends (Last 6 Months)</h3>
+              <h3 className="text-2xl font-extrabold text-slate-900 mb-4">{t('price_trends')}</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendData} margin={{ top: 4, right: 10, left: 0, bottom: 0 }}>
@@ -433,7 +442,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
             <>
               <div className="grid grid-cols-1 2xl:grid-cols-3 gap-6">
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
-              <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Cost Distribution</h3>
+              <h3 className="text-2xl font-extrabold text-slate-900 mb-4">{t('cost_distribution')}</h3>
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -466,7 +475,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
             </div>
 
             <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5 2xl:col-span-2">
-              <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Insights Panel</h3>
+              <h3 className="text-2xl font-extrabold text-slate-900 mb-4">{t('insights_panel')}</h3>
               <div className="space-y-3">
                 {insights.map((text) => (
                   <div key={text} className="flex items-start gap-3 bg-emerald-50/70 border border-emerald-100 rounded-2xl p-4">
@@ -481,16 +490,16 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
           </div>
 
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-5">
-            <h3 className="text-2xl font-extrabold text-slate-900 mb-4">Crop Profitability Table</h3>
+            <h3 className="text-2xl font-extrabold text-slate-900 mb-4">{t('crop_profitability_table')}</h3>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
-                    <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Crop</th>
-                    <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Cost</th>
-                    <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Selling Price</th>
-                    <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Profit</th>
-                    <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">Demand Level</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">{t('crop')}</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">{t('cost')}</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">{t('selling_price')}</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">{t('profit')}</th>
+                    <th className="text-left px-4 py-3 text-[11px] font-bold uppercase tracking-wide text-slate-500">{t('demand_level')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -506,7 +515,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
                       <td className="px-4 py-4 font-semibold text-slate-700">{formatCurrency(row.sellingPrice)}</td>
                       <td className="px-4 py-4 font-bold text-emerald-700">{formatCurrency(row.profit)}</td>
                       <td className="px-4 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${demandBadgeClass[row.demandLevel] || demandBadgeClass.Low}`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${demandBadgeClass(t)[row.demandLevel] || demandBadgeClass(t)[t('low')]}`}>
                           {row.demandLevel}
                         </span>
                       </td>
@@ -522,7 +531,7 @@ function FarmerProfitDecisionDashboard({ userProfile }) {
           <div className="rounded-2xl bg-gradient-to-r from-emerald-600 to-lime-600 text-white px-5 py-4 shadow-lg">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
               <p className="text-sm font-semibold text-emerald-50">
-                {selectedCity}, {selectedState} | {periodLabelMap[timePeriod]} | {startDate} to {endDate}
+                {selectedCity}, {selectedState} | {periodLabelMap(t)[timePeriod]} | {startDate} {t('to')} {endDate}
               </p>
               <div className="flex items-center gap-2">
                 <IndianRupee className="w-4 h-4" />

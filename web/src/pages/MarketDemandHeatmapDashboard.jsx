@@ -13,15 +13,38 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
 import { Flame, MapPin, TrendingUp } from 'lucide-react';
 
-const crops = ['Wheat', 'Rice', 'Tomato', 'Onion', 'Potato'];
-const timeOptions = [
-  { label: 'Today', value: 'today' },
-  { label: 'Last 7 days', value: '7d' },
-  { label: 'Last 30 days', value: '30d' },
+const getCrops = (t) => [
+  { label: t('wheat_crop'), value: 'Wheat' },
+  { label: t('rice_crop'), value: 'Rice' },
+  { label: t('tomato_crop'), value: 'Tomato' },
+  { label: t('onion_crop'), value: 'Onion' },
+  { label: t('potato_crop'), value: 'Potato' }
 ];
-const locationOptions = ['India', 'North India', 'South India', 'West India', 'East India'];
+
+const getTimeOptions = (t) => [
+  { label: t('today'), value: 'today' },
+  { label: t('last_7_days'), value: '7d' },
+  { label: t('last_30_days'), value: '30d' },
+];
+
+const getLocationOptions = (t) => [
+  t('india'),
+  t('north_india'),
+  t('south_india'),
+  t('west_india'),
+  t('east_india')
+];
+
+const regionLabelMap = (t) => ({
+  'India': t('india'),
+  'North India': t('north_india'),
+  'South India': t('south_india'),
+  'West India': t('west_india'),
+  'East India': t('east_india')
+});
 
 const regionForCity = {
   Delhi: 'North India',
@@ -151,19 +174,25 @@ const demandColor = (score) => {
   return '#DC2626';
 };
 
-const demandLabel = (score) => {
-  if (score < 45) return 'Low';
-  if (score < 75) return 'Medium';
-  return 'High';
+const demandLabel = (t, score) => {
+  if (score < 45) return t('low');
+  if (score < 75) return t('medium_demand');
+  return t('high');
 };
 
 const formatCurrency = (value) => `₹${Math.round(value).toLocaleString('en-IN')}`;
 
 function MarketDemandHeatmapDashboard() {
+  const { t } = useTranslation();
   const [selectedLocation, setSelectedLocation] = useState('India');
   const [selectedCrop, setSelectedCrop] = useState('Tomato');
   const [selectedTime, setSelectedTime] = useState('7d');
   const [hoveredNode, setHoveredNode] = useState(null);
+
+  const cropsList = getCrops(t);
+  const timeOptions = getTimeOptions(t);
+  const locationOptions = getLocationOptions(t);
+  const regionMap = regionLabelMap(t);
 
   const processedCities = useMemo(() => {
     const multiplier = timeMultiplier[selectedTime] || 1;
@@ -178,13 +207,13 @@ function MarketDemandHeatmapDashboard() {
         ...city,
         region: regionForCity[city.city] || 'India',
         demandScore: score,
-        demandLevel: demandLabel(score),
+        demandLevel: demandLabel(t, score),
         avgPrice,
         quantity,
         heatColor: demandColor(score),
       };
     });
-  }, [selectedCrop, selectedTime]);
+  }, [selectedCrop, selectedTime, t]);
 
   const visibleCities = useMemo(() => {
     if (selectedLocation === 'India') return processedCities;
@@ -196,23 +225,22 @@ function MarketDemandHeatmapDashboard() {
   }, [visibleCities]);
 
   const lowDemandRegions = useMemo(() => {
-    const regionScores = Object.keys(locationOptions)
-      .filter((r) => r !== 'India')
+    const regionScores = ['North India', 'South India', 'West India', 'East India']
       .map((region) => {
         const regionCities = processedCities.filter((city) => city.region === region);
         const avg =
           regionCities.reduce((sum, city) => sum + city.demandScore, 0) /
           Math.max(regionCities.length, 1);
-        return { region, avg: Math.round(avg) };
+        return { region: regionMap[region], avg: Math.round(avg) };
       });
 
     return regionScores.sort((a, b) => a.avg - b.avg).slice(0, 3);
-  }, [processedCities]);
+  }, [processedCities, regionMap]);
 
   const trendingCrop = useMemo(() => {
     const multiplier = timeMultiplier[selectedTime] || 1;
 
-    const totals = crops.map((crop) => {
+    const totals = ['Wheat', 'Rice', 'Tomato', 'Onion', 'Potato'].map((crop) => {
       const total = visibleCities.reduce((sum, city) => {
         const base = city.baseDemand[crop] || 60;
         return sum + Math.round(base * multiplier);
@@ -220,8 +248,9 @@ function MarketDemandHeatmapDashboard() {
       return { crop, total };
     });
 
-    return totals.sort((a, b) => b.total - a.total)[0]?.crop || 'Tomato';
-  }, [visibleCities, selectedTime]);
+    const topCrop = totals.sort((a, b) => b.total - a.total)[0]?.crop || 'Tomato';
+    return cropsList.find(c => c.value === topCrop)?.label || topCrop;
+  }, [visibleCities, selectedTime, cropsList]);
 
   const demandByCityData = useMemo(() => {
     return visibleCities
@@ -259,54 +288,54 @@ function MarketDemandHeatmapDashboard() {
 
   const cropShareData = useMemo(() => {
     const multiplier = timeMultiplier[selectedTime] || 1;
-    return crops.map((crop) => {
+    return cropsList.map((crop) => {
       const totalDemand = visibleCities.reduce((sum, city) => {
-        return sum + Math.round((city.baseDemand[crop] || 60) * multiplier);
+        return sum + Math.round((city.baseDemand[crop.value] || 60) * multiplier);
       }, 0);
-      return { name: crop, value: totalDemand };
+      return { name: crop.label, value: totalDemand };
     });
-  }, [visibleCities, selectedTime]);
+  }, [visibleCities, selectedTime, cropsList]);
 
   return (
     <div className="max-w-[1450px] mx-auto space-y-6 pb-6">
       <header className="bg-gradient-to-br from-white via-emerald-50/40 to-orange-50/40 rounded-3xl border border-emerald-100 shadow-sm p-5 lg:p-7">
         <div className="flex flex-col gap-4">
           <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">AgriVision - Market Demand Heatmap</h1>
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">{t('market_heatmap_title')}</h1>
             <p className="text-slate-500 font-medium mt-1">
-              Real-time crop demand intensity across key Indian market cities.
+              {t('market_heatmap_subtitle')}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
-              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold mb-2">Location Focus</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold mb-2">{t('location_focus')}</p>
               <select
                 value={selectedLocation}
                 onChange={(e) => setSelectedLocation(e.target.value)}
                 className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none"
               >
-                {locationOptions.map((option) => (
-                  <option key={option} value={option}>{option}</option>
+                {['India', 'North India', 'South India', 'West India', 'East India'].map((option) => (
+                  <option key={option} value={option}>{regionMap[option]}</option>
                 ))}
               </select>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
-              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold mb-2">Crop Filter</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold mb-2">{t('crop_filter')}</p>
               <select
                 value={selectedCrop}
                 onChange={(e) => setSelectedCrop(e.target.value)}
                 className="w-full bg-transparent text-sm font-semibold text-slate-700 outline-none"
               >
-                {crops.map((crop) => (
-                  <option key={crop} value={crop}>{crop}</option>
+                {cropsList.map((crop) => (
+                  <option key={crop.value} value={crop.value}>{crop.label}</option>
                 ))}
               </select>
             </div>
 
             <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3">
-              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold mb-2">Time Filter</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold mb-2">{t('time_filter')}</p>
               <div className="grid grid-cols-3 gap-2">
                 {timeOptions.map((time) => (
                   <button
@@ -330,10 +359,10 @@ function MarketDemandHeatmapDashboard() {
       <div className="grid grid-cols-1 2xl:grid-cols-12 gap-6">
         <section className="2xl:col-span-8 bg-white rounded-3xl border border-emerald-100 shadow-sm p-5 lg:p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-extrabold text-slate-900">Interactive India Demand Heatmap</h2>
+            <h2 className="text-2xl font-extrabold text-slate-900">{t('interactive_heatmap_title')}</h2>
             <div className="inline-flex items-center gap-2 rounded-xl bg-orange-50 text-orange-700 border border-orange-100 px-3 py-1.5 text-xs font-bold">
               <Flame className="w-4 h-4" />
-              {selectedCrop} demand pulse
+              {t('demand_pulse', { crop: cropsList.find(c => c.value === selectedCrop)?.label || selectedCrop })}
             </div>
           </div>
 
@@ -383,40 +412,40 @@ function MarketDemandHeatmapDashboard() {
                     {hoveredNode.demandLevel}
                   </span>
                 </div>
-                <p className="text-xs text-slate-500 mt-1">{selectedCrop} demand</p>
+                <p className="text-xs text-slate-500 mt-1">{t('demand_pulse', { crop: cropsList.find(c => c.value === selectedCrop)?.label || selectedCrop })}</p>
                 <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
                   <div className="rounded-xl bg-slate-50 p-2">
-                    <p className="text-slate-400 font-semibold">Average price</p>
+                    <p className="text-slate-400 font-semibold">{t('average_price')}</p>
                     <p className="text-slate-900 font-bold">{formatCurrency(hoveredNode.avgPrice)}</p>
                   </div>
                   <div className="rounded-xl bg-slate-50 p-2">
-                    <p className="text-slate-400 font-semibold">Quantity required</p>
-                    <p className="text-slate-900 font-bold">{hoveredNode.quantity} tons</p>
+                    <p className="text-slate-400 font-semibold">{t('qty_required')}</p>
+                    <p className="text-slate-900 font-bold">{hoveredNode.quantity} {t('tons')}</p>
                   </div>
                 </div>
               </div>
             )}
 
             <div className="absolute top-4 right-4 bg-white/90 backdrop-blur rounded-2xl border border-slate-200 p-3">
-              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold mb-2">Demand Legend</p>
+              <p className="text-[11px] uppercase tracking-wide text-slate-400 font-bold mb-2">{t('demand_legend')}</p>
               <div className="flex items-center gap-2 text-xs font-bold text-slate-600">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FDE68A' }} /> Low
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FDE68A' }} /> {t('low')}
               </div>
               <div className="flex items-center gap-2 text-xs font-bold text-slate-600 mt-1">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FB923C' }} /> Medium
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#FB923C' }} /> {t('medium_demand')}
               </div>
               <div className="flex items-center gap-2 text-xs font-bold text-slate-600 mt-1">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#DC2626' }} /> High
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#DC2626' }} /> {t('high')}
               </div>
             </div>
           </div>
         </section>
 
         <aside className="2xl:col-span-4 bg-white rounded-3xl border border-emerald-100 shadow-sm p-5 lg:p-6 space-y-5">
-          <h2 className="text-2xl font-extrabold text-slate-900">Insights</h2>
+          <h2 className="text-2xl font-extrabold text-slate-900">{t('overview')}</h2>
 
           <div className="rounded-2xl border border-red-100 bg-red-50/60 p-4">
-            <p className="text-xs uppercase tracking-wide text-red-500 font-bold mb-2">Top 5 High Demand Cities</p>
+            <p className="text-xs uppercase tracking-wide text-red-500 font-bold mb-2">{t('high_demand_cities')}</p>
             <ul className="space-y-2">
               {topHighDemandCities.map((city, idx) => (
                 <li key={city.city} className="flex items-center justify-between text-sm">
@@ -428,7 +457,7 @@ function MarketDemandHeatmapDashboard() {
           </div>
 
           <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
-            <p className="text-xs uppercase tracking-wide text-amber-600 font-bold mb-2">Lowest Demand Regions</p>
+            <p className="text-xs uppercase tracking-wide text-amber-600 font-bold mb-2">{t('low_demand_regions')}</p>
             <ul className="space-y-2">
               {lowDemandRegions.map((region) => (
                 <li key={region.region} className="flex items-center justify-between text-sm">
@@ -440,7 +469,7 @@ function MarketDemandHeatmapDashboard() {
           </div>
 
           <div className="rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
-            <p className="text-xs uppercase tracking-wide text-emerald-600 font-bold mb-2">Trending Crop in Market</p>
+            <p className="text-xs uppercase tracking-wide text-emerald-600 font-bold mb-2">{t('trending_crop_market')}</p>
             <div className="flex items-center justify-between">
               <span className="text-2xl font-extrabold text-emerald-700">{trendingCrop}</span>
               <TrendingUp className="w-6 h-6 text-emerald-600" />
@@ -451,7 +480,7 @@ function MarketDemandHeatmapDashboard() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="bg-white rounded-3xl border border-emerald-100 shadow-sm p-5">
-          <h3 className="text-xl font-extrabold text-slate-900 mb-4">Demand by City</h3>
+          <h3 className="text-xl font-extrabold text-slate-900 mb-4">{t('demand_by_city')}</h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={demandByCityData}>
@@ -466,7 +495,7 @@ function MarketDemandHeatmapDashboard() {
         </div>
 
         <div className="bg-white rounded-3xl border border-emerald-100 shadow-sm p-5">
-          <h3 className="text-xl font-extrabold text-slate-900 mb-4">Demand Trend Over Time</h3>
+          <h3 className="text-xl font-extrabold text-slate-900 mb-4">{t('demand_trend_time')}</h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData}>
@@ -481,7 +510,7 @@ function MarketDemandHeatmapDashboard() {
         </div>
 
         <div className="bg-white rounded-3xl border border-emerald-100 shadow-sm p-5">
-          <h3 className="text-xl font-extrabold text-slate-900 mb-4">Demand Share by Crop</h3>
+          <h3 className="text-xl font-extrabold text-slate-900 mb-4">{t('demand_share_crop')}</h3>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>

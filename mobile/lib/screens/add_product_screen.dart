@@ -314,7 +314,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           backgroundColor: const Color(0xFF16A34A),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           elevation: 10,
-          shadowColor: const Color(0xFF16A34A).withValues(alpha: 0.5),
+          shadowColor: const Color(0xFF16A34A).withOpacity(0.5),
         ),
         child: Text(widget.product != null ? 'Update Listing' : 'List Crop on Market', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
       ),

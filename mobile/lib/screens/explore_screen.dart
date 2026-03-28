@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../services/api_service.dart';
 import '../models/product.dart';
 import '../models/user_profile.dart';
+import '../l10n/app_localizations.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'dart:math' as math;
 
@@ -96,15 +97,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 20),
-          _buildSearchBar(),
+          _buildSearchBar(l10n),
           const SizedBox(height: 25),
-          _buildCategoryList(),
+          _buildCategoryList(l10n),
           const SizedBox(height: 25),
           Expanded(
             child: FutureBuilder<List<Product>>(
@@ -124,14 +126,14 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 }).toList();
 
                 if (products.isEmpty) {
-                  return _buildEmptyState();
+                  return _buildEmptyState(l10n);
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.only(bottom: 100),
                   itemCount: products.length,
                   itemBuilder: (context, index) {
-                    return _buildProductCard(products[index]);
+                    return _buildProductCard(products[index], l10n);
                   },
                 );
               },
@@ -142,21 +144,21 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 5),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 15, offset: const Offset(0, 5)),
+          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 5)),
         ],
       ),
       child: TextField(
         onChanged: (v) => setState(() => _searchQuery = v),
         decoration: InputDecoration(
           icon: const Icon(Icons.search, color: Colors.blueGrey),
-          hintText: "Search wholesale fresh produce...",
+          hintText: l10n.translate('search_hint'),
           hintStyle: GoogleFonts.outfit(color: Colors.blueGrey[300], fontWeight: FontWeight.w500),
           border: InputBorder.none,
         ),
@@ -164,7 +166,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  Widget _buildCategoryList() {
+  Widget _buildCategoryList(AppLocalizations l10n) {
     return SizedBox(
       height: 45,
       child: ListView.builder(
@@ -186,7 +188,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 ),
                 alignment: Alignment.center,
                 child: Text(
-                  cat[0].toUpperCase() + cat.substring(1),
+                  l10n.translate(cat),
                   style: GoogleFonts.outfit(
                     color: isSelected ? Colors.white : Colors.blueGrey[600],
                     fontWeight: FontWeight.bold,
@@ -201,7 +203,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  Widget _buildProductCard(Product p) {
+  Widget _buildProductCard(Product p, AppLocalizations l10n) {
     final dist = _calculateDistance(
       widget.profile?.locationLat,
       widget.profile?.locationLng,
@@ -215,7 +217,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 15, offset: const Offset(0, 8)),
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8)),
         ],
       ),
       child: Column(
@@ -237,8 +239,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 left: 20,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.9), borderRadius: BorderRadius.circular(10)),
-                  child: Text(p.category.toUpperCase(), style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.9), borderRadius: BorderRadius.circular(10)),
+                  child: Text(l10n.translate(p.category).toUpperCase(), style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
                 ),
               ),
             ],
@@ -251,8 +253,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(child: Text(p.name, style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey[900]))),
-                    Text('₹${p.price}', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w900, color: const Color(0xFF16A34A))),
+                    Expanded(child: Text(l10n.translate(p.name), style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey[900]))),
+                    Text('₹${p.price} / ${l10n.translate(p.unit)}', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w900, color: const Color(0xFF16A34A))),
                   ],
                 ),
                 const SizedBox(height: 5),
@@ -260,21 +262,34 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   children: [
                     Icon(Icons.location_on, size: 14, color: Colors.red[300]),
                     const SizedBox(width: 4),
-                    Text('Dist: ${dist}km', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey[400])),
+                    Text('${l10n.estDistance}: ${dist}km', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey[400])),
                     const Spacer(),
-                    Text('/ ${p.unit}', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey[400])),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(color: Colors.amber[50], borderRadius: BorderRadius.circular(5)),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.star, size: 12, color: Colors.amber),
+                          const SizedBox(width: 2),
+                          Text('${p.farmerAvgRating}', style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.amber[900])),
+                          Text(' (${p.farmerTotalReviews})', style: GoogleFonts.outfit(fontSize: 10, color: Colors.amber[700])),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 15),
+                const SizedBox(height: 8),
+                Text('${l10n.translate('farmer_seller')}: ${p.farmerName ?? "AgriFarmer"}', style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.blueGrey[600])),
+                const SizedBox(height: 10),
                 Text(p.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: GoogleFonts.outfit(fontSize: 14, color: Colors.blueGrey[500])),
                 const SizedBox(height: 20),
                 Row(
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _showCheckoutModal(p),
+                        onPressed: () => _showCheckoutModal(p, l10n),
                         icon: const Icon(Icons.shopping_cart_outlined, size: 20),
-                        label: const Text("Buy Now"),
+                        label: Text(l10n.translate('buy_now')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.blueGrey[900],
                           foregroundColor: Colors.white,
@@ -306,7 +321,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  Future<void> _showCheckoutModal(Product p) async {
+  Future<void> _showCheckoutModal(Product p, AppLocalizations l10n) async {
     double quantity = 1.0;
     Map<String, dynamic>? quote;
     bool isQuoting = false;
@@ -350,15 +365,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(p.name, style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
-                          Text('₹${p.price} / ${p.unit}', style: GoogleFonts.outfit(color: const Color(0xFF16A34A), fontWeight: FontWeight.bold)),
+                          Text(l10n.translate(p.name), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
+                          Text('₹${p.price} / ${l10n.translate(p.unit)}', style: GoogleFonts.outfit(color: const Color(0xFF16A34A), fontWeight: FontWeight.bold)),
                         ],
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 30),
-                Text('Quantity', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+                Text(l10n.translate('quantity'), style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -386,15 +401,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   decoration: BoxDecoration(color: Colors.blueGrey[50], borderRadius: BorderRadius.circular(20)),
                   child: Column(
                     children: [
-                      _buildSummaryRow('Subtotal', '₹${subtotal.toStringAsFixed(2)}'),
+                      _buildSummaryRow(l10n.translate('subtotal'), '₹${subtotal.toStringAsFixed(2)}'),
                       const SizedBox(height: 10),
                       _buildSummaryRow(
-                        'AI Logistics Fee', 
-                        isQuoting ? 'Calculating...' : '₹${shipping.toStringAsFixed(2)}',
+                        l10n.translate('logistics_fee'), 
+                        isQuoting ? l10n.translate('calculating') : '₹${shipping.toStringAsFixed(2)}',
                         isHigh: true,
                       ),
                       const Padding(padding: EdgeInsets.symmetric(vertical: 15), child: Divider()),
-                      _buildSummaryRow('Grand Total', '₹${total.toStringAsFixed(2)}', isBold: true),
+                      _buildSummaryRow(l10n.translate('grand_total'), '₹${total.toStringAsFixed(2)}', isBold: true),
                     ],
                   ),
                 ),
@@ -413,7 +428,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       disabledBackgroundColor: Colors.blueGrey[100],
                     ),
                     child: Text(
-                      isQuoting ? 'Calculating Fee...' : 'Confirm & Pay', 
+                      isQuoting ? l10n.translate('calculating') : l10n.translate('confirm_pay'), 
                       style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 16)
                     ),
                   ),
@@ -503,16 +518,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.search_off, size: 80, color: Colors.blueGrey[200]),
           const SizedBox(height: 20),
-          Text('No products found', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey[900])),
+          Text(l10n.noResultsFound, style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.blueGrey[900])),
           const SizedBox(height: 10),
-          Text('Try searching for something else.', style: GoogleFonts.outfit(fontSize: 14, color: Colors.blueGrey[500])),
+          Text(l10n.translate('search_hint'), style: GoogleFonts.outfit(fontSize: 14, color: Colors.blueGrey[500])),
         ],
       ),
     );

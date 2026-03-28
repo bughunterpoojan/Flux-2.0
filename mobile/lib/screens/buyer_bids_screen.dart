@@ -63,7 +63,7 @@ class _BuyerBidsScreenState extends State<BuyerBidsScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.blueGrey[50]!),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 10, offset: const Offset(0, 5)),
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 5)),
         ],
       ),
       child: Column(
@@ -75,7 +75,7 @@ class _BuyerBidsScreenState extends State<BuyerBidsScreen> {
                 Text(bid.productName ?? 'Unknown Product', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blueGrey[900])),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                   child: Text(bid.status.toUpperCase(), style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900, color: statusColor)),
                 ),
             ],

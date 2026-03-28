@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../l10n/app_localizations.dart';
 
 class FarmerOrdersScreen extends StatefulWidget {
   const FarmerOrdersScreen({super.key});
@@ -37,10 +38,12 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
       await _apiService.updateOrderStatus(id, nextStatus);
       if (!mounted) return;
       _refresh();
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Order marked as $nextStatus')));
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.translate('order_status_update')} $nextStatus')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+      final l10n = AppLocalizations.of(context)!;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${l10n.translate('error_prefix')} $e')));
     }
   }
 
@@ -116,7 +119,7 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: Colors.blueGrey[100]!),
         boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 10, offset: const Offset(0, 4)),
+          BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -220,11 +223,11 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
               if (podController.text.length != 4) return;
               try {
                 await _apiService.setPodCode(orderId, podController.text);
-                if (!mounted) return;
+                if (!context.mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('POD code generated successfully!')));
               } catch (e) {
-                if (!mounted) return;
+                if (!context.mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
               }
             },
@@ -244,7 +247,7 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
       child: Text(status.toUpperCase(), style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900, color: color, letterSpacing: 0.5)),
     );
   }

@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(height: 32),
               CircleAvatar(
                 radius: 32,
-                backgroundColor: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                 child: const Icon(Icons.eco, size: 32, color: Color(0xFF16A34A)),
               ),
               const SizedBox(height: 32),
@@ -105,7 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(24),
                     ),
                     elevation: 8,
-                    shadowColor: const Color(0xFF16A34A).withValues(alpha: 0.3),
+                    shadowColor: const Color(0xFF16A34A).withOpacity(0.3),
                   ),
                   child: _isLoading 
                     ? const CircularProgressIndicator(color: Colors.white)

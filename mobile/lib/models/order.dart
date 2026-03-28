@@ -63,6 +63,9 @@ class OrderItem {
   final String productName;
   final double quantity;
   final double priceAtOrder;
+  final String? farmerName;
+  final double farmerAvgRating;
+  final int farmerTotalReviews;
 
   OrderItem({
     required this.id,
@@ -70,6 +73,9 @@ class OrderItem {
     required this.productName,
     required this.quantity,
     required this.priceAtOrder,
+    this.farmerName,
+    this.farmerAvgRating = 0.0,
+    this.farmerTotalReviews = 0,
   });
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
@@ -79,6 +85,9 @@ class OrderItem {
       productName: json['product_name'] ?? 'Unknown Product',
       quantity: double.parse(json['quantity'].toString()),
       priceAtOrder: double.parse(json['price_at_order'].toString()),
+      farmerName: json['farmer_name'],
+      farmerAvgRating: double.parse((json['farmer_avg_rating'] ?? 0.0).toString()),
+      farmerTotalReviews: int.parse((json['farmer_total_reviews'] ?? 0).toString()),
     );
   }
 }

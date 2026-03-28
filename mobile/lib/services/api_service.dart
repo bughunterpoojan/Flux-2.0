@@ -269,6 +269,45 @@ class ApiService {
     }
   }
 
+  // Review Methods
+  Future<List<dynamic>> getReviews({bool mine = false, bool farmer = false}) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access');
+    String url = '${baseUrl}reviews/';
+    if (mine) url += '?mine=true';
+    if (farmer) url += '?farmer=true';
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+    if (response.statusCode == 200) {
+      return json.decode(response.body);
+    } else {
+      throw Exception('Failed to load reviews');
+    }
+  }
+
+  Future<void> submitReview(int productId, int rating, String comment) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('access');
+    final response = await http.post(
+      Uri.parse('${baseUrl}reviews/'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+      body: json.encode({
+        'product': productId,
+        'rating': rating,
+        'comment': comment,
+      }),
+    );
+    if (response.statusCode != 201) {
+      throw Exception('Failed to submit review: ${response.body}');
+    }
+  }
+
   Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('access');

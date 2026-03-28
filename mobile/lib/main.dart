@@ -1,15 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'screens/login_screen.dart';
-import 'screens/buyer_home_shell.dart';
-import 'screens/farmer_home.dart';
-import 'services/api_service.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'models/user_profile.dart';
+import 'providers/language_provider.dart';
+import 'l10n/app_localizations.dart';
+import 'services/api_service.dart';
+import 'screens/farmer_home.dart';
+import 'screens/buyer_home_shell.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const AgriMarketApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
+      ],
+      child: const AgriMarketApp(),
+    ),
+  );
 }
 
 class AgriMarketApp extends StatelessWidget {
@@ -17,9 +28,22 @@ class AgriMarketApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+
     return MaterialApp(
       title: 'AgriMarket',
       debugShowCheckedModeBanner: false,
+      locale: languageProvider.currentLocale,
+      supportedLocales: const [
+        Locale('en', ''),
+        Locale('hi', ''),
+      ],
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(

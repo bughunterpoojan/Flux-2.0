@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../models/user_profile.dart';
+import '../l10n/app_localizations.dart';
+import '../providers/language_provider.dart';
 
 class BuyerProfileScreen extends StatefulWidget {
   final UserProfile? initialProfile;
@@ -64,6 +67,9 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final langProvider = Provider.of<LanguageProvider>(context);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(25),
       child: Form(
@@ -78,6 +84,16 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
                   Positioned(bottom: 0, right: 0, child: CircleAvatar(radius: 15, backgroundColor: Color(0xFF16A34A), child: Icon(Icons.edit, size: 15, color: Colors.white))),
                 ],
               ),
+            ),
+            const SizedBox(height: 30),
+            _buildSectionHeader(l10n.translate('change_language')),
+            const SizedBox(height: 15),
+            Row(
+              children: [
+                _buildLanguageChip('English', 'en', langProvider),
+                const SizedBox(width: 15),
+                _buildLanguageChip('हिंदी', 'hi', langProvider),
+              ],
             ),
             const SizedBox(height: 30),
             _buildSectionHeader('Business Identity'),
@@ -97,13 +113,12 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
                 Expanded(child: _buildField('Longitude', _lngController, Icons.map_outlined, keyboardType: TextInputType.number)),
               ],
             ),
-            const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _isSaving ? null : _saveProfile,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Color(0xFF16A34A),
+                  backgroundColor: const Color(0xFF16A34A),
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 18),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -111,7 +126,7 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
                 ),
                 child: _isSaving 
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text('Save Changes', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 16)),
+                  : Text(l10n.translate('status') == 'delivered' ? 'Save Changes' : 'Save Changes', style: GoogleFonts.outfit(fontWeight: FontWeight.w900, fontSize: 16)), 
               ),
             ),
             const SizedBox(height: 15),
@@ -120,12 +135,28 @@ class _BuyerProfileScreenState extends State<BuyerProfileScreen> {
               child: TextButton.icon(
                 onPressed: () => ApiService.logout(context),
                 icon: const Icon(Icons.logout, color: Colors.red),
-                label: Text('Logout', style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
+                label: Text(l10n.translate('logout'), style: GoogleFonts.outfit(color: Colors.red, fontWeight: FontWeight.bold)),
               ),
             ),
             const SizedBox(height: 100),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageChip(String label, String code, LanguageProvider provider) {
+    final isSelected = provider.currentLocale.languageCode == code;
+    return ChoiceChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: (val) {
+        if (val) provider.changeLanguage(code);
+      },
+      selectedColor: const Color(0xFF16A34A).withOpacity(0.1),
+      labelStyle: GoogleFonts.outfit(
+        color: isSelected ? const Color(0xFF16A34A) : Colors.blueGrey,
+        fontWeight: FontWeight.bold,
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'explore_screen.dart';
 import 'buyer_orders_screen.dart';
 import 'buyer_bids_screen.dart';
 import 'buyer_profile_screen.dart';
+import '../l10n/app_localizations.dart';
 
 class BuyerHomeShell extends StatefulWidget {
   const BuyerHomeShell({super.key});
@@ -36,6 +37,7 @@ class _BuyerHomeShellState extends State<BuyerHomeShell> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final List<Widget> screens = [
       ExploreScreen(onAddToCart: (p) => setState(() => _currentIndex = 1), profile: _profile),
       const BuyerOrdersScreen(),
@@ -43,7 +45,12 @@ class _BuyerHomeShellState extends State<BuyerHomeShell> {
       BuyerProfileScreen(initialProfile: _profile, onUpdate: (p) => setState(() => _profile = p)),
     ];
 
-    final List<String> titles = ['AgriBuyer', 'My Orders', 'Active Bids', 'Settings'];
+    final List<String> titles = [
+      l10n.translate('app_title'),
+      l10n.translate('my_orders'),
+      l10n.translate('bids'),
+      l10n.translate('profile')
+    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -67,7 +74,7 @@ class _BuyerHomeShellState extends State<BuyerHomeShell> {
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
-            BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 20, offset: const Offset(0, -5)),
+            BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 20, offset: const Offset(0, -5)),
           ],
         ),
         child: BottomNavigationBar(
@@ -80,11 +87,11 @@ class _BuyerHomeShellState extends State<BuyerHomeShell> {
           selectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12),
           unselectedLabelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 12),
           elevation: 0,
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.explore_outlined), activeIcon: Icon(Icons.explore), label: 'Explore'),
-            BottomNavigationBarItem(icon: Icon(Icons.shopping_bag_outlined), activeIcon: Icon(Icons.shopping_bag), label: 'Orders'),
-            BottomNavigationBarItem(icon: Icon(Icons.message_outlined), activeIcon: Icon(Icons.message), label: 'Bids'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
+          items: [
+            BottomNavigationBarItem(icon: const Icon(Icons.explore_outlined), activeIcon: const Icon(Icons.explore), label: l10n.translate('explore')),
+            BottomNavigationBarItem(icon: const Icon(Icons.shopping_bag_outlined), activeIcon: const Icon(Icons.shopping_bag), label: l10n.translate('my_orders')),
+            BottomNavigationBarItem(icon: const Icon(Icons.message_outlined), activeIcon: const Icon(Icons.message), label: l10n.translate('bids')),
+            BottomNavigationBarItem(icon: const Icon(Icons.person_outline), activeIcon: const Icon(Icons.person), label: l10n.translate('profile')),
           ],
         ),
       ),

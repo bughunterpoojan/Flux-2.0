@@ -68,7 +68,7 @@ class _ProfitPlanningScreenState extends State<ProfitPlanningScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('AI Insight', style: GoogleFonts.outfit(color: Colors.white.withValues(alpha: 0.8), fontSize: 12, fontWeight: FontWeight.bold)),
+                Text('AI Insight', style: GoogleFonts.outfit(color: Colors.white.withOpacity(0.8), fontSize: 12, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 5),
                 Text('Tomato is currently providing the highest profit margin in your region. Consider increasing yield.', 
                   style: GoogleFonts.outfit(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
